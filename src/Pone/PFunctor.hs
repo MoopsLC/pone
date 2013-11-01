@@ -2,13 +2,25 @@ module Pone.PFunctor where
 
 import Pone.Option
 
+{-
+    requires (<$$>) id === id
+             (<$$>) (f . g) == (<$$>) f . (<$$>) g
+-}
 class PFunctor f where
-    fmap :: (a -> b) -> f a -> f b
+    (<$$>) :: (a -> b) -> f a -> f b
     
 instance PFunctor Option where
-    fmap f o = case o of 
-                   Some o -> Some $ f o
-                   None -> None
+    (<$$>) f o = case o of 
+                Some o -> Some $ f o
+                None -> None
                    
 instance PFunctor [] where
-    fmap = map
+    (<$$>) = map
+    
+instance PFunctor ((->) r) where
+    (<$$>) = (.)
+    
+instance PFunctor IO where 
+    (<$$>) f o = do value <- o
+                    return $ f value
+    
