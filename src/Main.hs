@@ -5,9 +5,9 @@ import Pone.Foldable
 import Pone.List
 import Pone.Applicative
 import Pone.Option
+import Pone.PMonad
 import System.IO
 
-testPath = "C:/Users/M/Desktop/pone/test.txt"
 
 print' :: (Show a) => a -> IO ()
 print' a = putStrLn $ show a
@@ -46,10 +46,6 @@ withFile' path mode f = do
 readFile' :: FilePath -> IO String
 readFile' path = withFile' path ReadMode hGetContents
     
-    
-    
 main = do  
-    contents <- readFile testPath
     print $ liftA2 (:) (Some 3) (Some [4]) 
-    print contents
     
