@@ -17,6 +17,6 @@ cabal-version:       >=1.8
 executable Pone
   main-is:             Main.hs
   --other-modules:     Tree.hs
-  build-depends:       base ==4.6.*
+  build-depends:       base ==4.6.*, parsec
   hs-source-dirs:      src
   extensions:          ScopedTypeVariables, FlexibleInstances
