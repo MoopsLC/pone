@@ -1,8 +1,8 @@
-module Pone.PMonad where
+module Learning.PMonad where
 
-import Pone.Option
-import Pone.Applicative 
-import Pone.List
+import Learning.Option
+import Learning.Applicative 
+import Learning.List
 
 {-
     laws: (m >>= f) >>= g === m >>= (\x -> (f x >>= g))

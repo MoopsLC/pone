@@ -1,4 +1,4 @@
-module Pone.Tree
+module Learning.Tree
 ( Tree(Branch, Empty)
 , treeInsert
 , treeSingle

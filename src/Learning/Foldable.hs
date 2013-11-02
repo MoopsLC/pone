@@ -1,12 +1,12 @@
-module Pone.Foldable
+module Learning.Foldable
 ( Foldable
 , foldMap
 ) where 
 
-import Pone.Semigroup
-import Pone.Monoid
-import Pone.Option
-import Pone.PFunctor
+import Learning.Semigroup
+import Learning.Monoid
+import Learning.Option
+import Learning.PFunctor
 
 class Foldable t where
     foldMap :: Monoid m => (a -> m) -> t a -> m

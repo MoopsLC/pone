@@ -1,4 +1,4 @@
-module Pone.RandomStuff where
+module Learning.RandomStuff where
 
 import Data.Monoid
 import System.IO

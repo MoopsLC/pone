@@ -1,6 +1,6 @@
-module Pone.PFunctor where
+module Learning.PFunctor where
 
-import Pone.Option
+import Learning.Option
 
 {-
     requires (<$$>) id === id

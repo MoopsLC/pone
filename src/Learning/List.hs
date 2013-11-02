@@ -1,4 +1,4 @@
-module Pone.List where
+module Learning.List where
 
 elem' :: Eq a => a -> [a] -> Bool
 elem' y ys = foldl (\acc x -> x == y || acc) False ys

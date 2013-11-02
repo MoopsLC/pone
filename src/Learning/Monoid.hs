@@ -1,10 +1,10 @@
-﻿module Pone.Monoid 
+﻿module Learning.Monoid 
 ( Monoid
 , zero
 ) where 
 
-import Pone.Semigroup
-import Pone.Option
+import Learning.Semigroup
+import Learning.Option
 
 {- additional laws
   ∀x ∈ a,  zero <+> x === x <+> zero

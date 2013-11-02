@@ -1,9 +1,9 @@
-﻿module Pone.Semigroup
+﻿module Learning.Semigroup
 ( Semigroup
 , (<+>)
 ) where 
 
-import Pone.Option
+import Learning.Option
 
 {-
     requires ∀x,y,z ∈ a,  (x <+> y) <+> z === x <+> (y <+> z)

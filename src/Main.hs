@@ -1,14 +1,14 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
-import Pone.Tree
-import Pone.Foldable
-import Pone.List
-import Pone.PFunctor
-import Pone.Applicative
-import Pone.Option
+import Learning.Tree
+import Learning.Foldable
+import Learning.List
+import Learning.PFunctor
+import Learning.Applicative
+import Learning.Option
+import Learning.RandomStuff
 import System.IO
 import Data.Monoid
-import Pone.RandomStuff
 import qualified Data.Map as Map
 
 import Control.Applicative((<*))

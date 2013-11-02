@@ -1,7 +1,7 @@
-module Pone.Applicative where
-import Pone.PFunctor
-import Pone.List 
-import Pone.Option
+module Learning.Applicative where
+import Learning.PFunctor
+import Learning.List 
+import Learning.Option
 import System.IO
 
 {-

@@ -1,4 +1,4 @@
-module Pone.Option where 
+module Learning.Option where 
 
 data Option a = Some a | None
 
