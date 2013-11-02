@@ -32,8 +32,7 @@ module Pone.Ast where
 data Op = Plus | Times deriving Show
 data Expr = IdentifierBind String Expr Expr 
           | Value Integer 
-          | Binop Op Expr Expr 
-          | Paren Expr 
+          | Binop Op Expr Expr
           | IdentifierEval String
           | ProcedureBind String [String] Expr Expr
           | ProcedureEval String [Expr]

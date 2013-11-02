@@ -1,3 +1,4 @@
+module Pone.Interpreter (poneEval) where
 import qualified Data.Map as Map
 
 import Debug.Trace
@@ -8,7 +9,6 @@ import Pone.Parser
 type Environment = Map.Map String Integer
 data ProcedureDef = ProcedureDef String [String] Expr
 type ProcedureMap = Map.Map String ProcedureDef
-
 
 pushDef :: ProcedureMap -> String -> ProcedureDef -> ProcedureMap
 pushDef map name def = Map.insert name def map
@@ -22,6 +22,8 @@ pushName env name value = Map.insert name value env
 lookupName :: Environment -> String -> Integer
 lookupName env name = env Map.! name --fixme, handle unbound names
 
+poneEval :: Expr -> Integer
+poneEval = eval Map.empty Map.empty 
 eval :: Environment -> ProcedureMap -> Expr -> Integer
 eval env procs expr = case expr of
     Value i -> i 
@@ -31,7 +33,6 @@ eval env procs expr = case expr of
                           Plus -> v1 + v2
                           Times -> v1 * v2
                                  
-    Paren e -> eval env procs e
     IdentifierEval s -> lookupName env s
     IdentifierBind name v e -> let value = eval env procs v
                                    newState = pushName env name value
@@ -50,3 +51,5 @@ eval env procs expr = case expr of
                 where mapFold :: Environment -> [(String, Integer)] -> Environment -- use Foldable
                       mapFold map [] = map
                       mapFold map ((param, value):xs) = mapFold (Map.insert param value map) xs
+
+
