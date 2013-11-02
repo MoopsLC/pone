@@ -35,33 +35,45 @@ exprParser = buildExpressionParser opTable term <?> "expression"
     
 term = m_parens exprParser
        <|> fmap Value m_number
-       <|> fmap Identifier m_identifier
+       <|> try (do { name <- m_identifier
+                   ; args <- argParser
+                   ; return $ ProcedureEval name args
+                   }
+               )
+       <|> fmap IdentifierEval m_identifier
        <|> do { m_reserved "define"
               ; name <- m_identifier
               ; m_reserved "as"
               ; value <- exprParser
               ; m_reserved "in"
               ; expr <- exprParser
-              ; return $ Assign name value expr
+              ; return $ IdentifierBind name value expr
               }
        <|> do { m_reserved "procedure"
               ; name <- m_identifier
-              ; args <- argParser
+              ; params <- paramParser
               ; m_reserved "is"
               ; value <- exprParser
               ; m_reserved "in"
               ; expr <- exprParser
-              ; return $ Procedure name args value expr
+              ; return $ ProcedureBind name params value expr
               }
        
 
 spaceSep1 p = sepBy1 p m_whiteSpace
        
-argParser :: Parser [String]
-argParser = fmap (id) (spaceSep1 m_identifier)
        
+       
+paramParser :: Parser [String]
+paramParser = fmap (id) (spaceSep1 m_identifier)
+     
+argParser :: Parser [Expr]
+argParser = fmap (id) (spaceSep1 exprParser)
+     
 mainParser :: Parser Expr
 mainParser = m_whiteSpace >> exprParser <* eof
 
 parsePone :: String => Either ParseError Expr
 parsePone src = parse mainParser "" src
+
+

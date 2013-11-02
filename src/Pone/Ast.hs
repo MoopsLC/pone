@@ -5,22 +5,24 @@ module Pone.Ast where
   Grammar:
 
 
-    <expr>    ::= <definition-expr>
-                | <procedure-expr>
+    <expr>    ::= <const-bind>
+                | <procedure-bind>
                 | "(" <expr> ")"
                 | <expr> <binop> <expr>
-                | <procedure>
+                | <procedure-eval>
                 | <ident>
                 | <integer>
                 
                
-    <definition-expr> ::= "define" <ident> "as" <expr> "in" <expr>
+    <const-bind> ::= "define" <ident> "as" <expr> "in" <expr>
 
-    <procedure> ::= <ident> <arg> (<arg> *) "is" <expr>
+    <procedure-bind> ::= <ident> <arg> (<arg> *) "is" <expr>
            
     <binop> ::= "+" | "*"
 
     <ident> ::= [a-zA-Z][\w]*
+    
+    <procedure-eval> ::= <itent> (<args> +)
 
     <integer> ::= [0-9]+
 
@@ -28,12 +30,13 @@ module Pone.Ast where
 
 
 data Op = Plus | Times deriving Show
-data Expr = Assign String Expr Expr 
+data Expr = IdentifierBind String Expr Expr 
           | Value Integer 
           | Binop Op Expr Expr 
           | Paren Expr 
-          | Identifier String
-          | Procedure String [String] Expr Expr
+          | IdentifierEval String
+          | ProcedureBind String [String] Expr Expr
+          | ProcedureEval String [Expr]
     deriving Show
     
     
