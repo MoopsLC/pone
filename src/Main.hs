@@ -1,12 +1,12 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 import Pone.Tree
-import Pone.Semigroup
-import Pone.Monoid
 import Pone.Foldable
 import Pone.List
+import Pone.PFunctor
 import Pone.Applicative
 import Pone.Option
-import Pone.PMonad
 import System.IO
+import Data.Monoid
 
 
 print' :: (Show a) => a -> IO ()
@@ -46,6 +46,60 @@ withFile' path mode f = do
 readFile' :: FilePath -> IO String
 readFile' path = withFile' path ReadMode hGetContents
     
-main = do  
+thing :: Maybe Int
+thing = do
+    start <- Nothing
+    thing2 <- Just (start + 100)
+    return start
+    
+
+applyLog :: Monoid c => (a, c) -> (a -> (b, c)) -> (b, c)  
+applyLog (x1, log1) f = let (x2, log2) = f x1 in (x2, log1 `mappend` log2)
+
+
+newtype Writer w a = Writer { runWriter :: (a, w) }
+
+ 
+instance Monoid w => Monad (Writer w) where 
+    return x = Writer (x, mempty)
+    Writer (x, acc) >>= f =  let Writer (x2, acc2) = f x in Writer (x2, acc `mappend` acc2)
+
+    
+    
+newtype PState s a = PState { runState :: s -> (a,s) }
+instance Monad (PState s) where 
+    return x = PState (\s -> (x, s))
+    --m a -> (a -> m b) -> m b 
+    (PState h) >>= f = PState (\state -> let (aa, newState) = h state 
+                                             (PState g) = f aa 
+                                         in g newState)
+                                         
+join' :: (Monad m) => m (m a) -> m a
+join' mm = do
+    m <- mm
+    m
+    
+    
+liftM' :: (Monad m) => (a -> b) -> m a -> m b  
+liftM' f xs = do
+    x <- xs
+    return $ f x
+    
+liftM2' :: Monad m => (a1 -> a2 -> r) -> m a1 -> m a2 -> m r
+liftM2' f x y = do 
+    vx <- x
+    vy <- y
+    return $ f vx vy
+    
+ap' :: (Monad m) => m (a -> b) -> m a -> m b  
+ap' fs x = do
+    f <- fs
+    v <- x
+    return $ f v
+    
+    
+main = do   
+    x <- return ()
+    print $ show $ thing
     print $ liftA2 (:) (Some 3) (Some [4]) 
     

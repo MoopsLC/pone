@@ -11,8 +11,8 @@ class PFunctor f where
     
 instance PFunctor Option where
     (<$$>) f o = case o of 
-                Some o -> Some $ f o
-                None -> None
+                 Some o -> Some $ f o
+                 None -> None
                    
 instance PFunctor [] where
     (<$$>) = map
