@@ -1,4 +1,3 @@
-{-# LANGUAGE ScopedTypeVariables #-}
 module Pone.Applicative where
 import Pone.PFunctor
 import Pone.List 

@@ -1,9 +1,5 @@
 module Pone.List where
 
-{- 
-    re-implemented a bunch of functions from Data.List for learning
--}
-
 elem' :: Eq a => a -> [a] -> Bool
 elem' y ys = foldl (\acc x -> x == y || acc) False ys
 

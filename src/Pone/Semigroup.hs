@@ -1,5 +1,4 @@
-﻿{-# LANGUAGE FlexibleInstances #-}
-module Pone.Semigroup
+﻿module Pone.Semigroup
 ( Semigroup
 , (<+>)
 ) where 

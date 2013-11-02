@@ -1,5 +1,4 @@
-﻿{-# LANGUAGE FlexibleInstances #-}
-module Pone.Monoid 
+﻿module Pone.Monoid 
 ( Monoid
 , zero
 ) where 

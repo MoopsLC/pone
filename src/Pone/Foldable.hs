@@ -17,7 +17,7 @@ class Foldable t where
 instance Foldable [] where
     foldMap f xs = foldl (<+>) zero $ map f xs
 
-{- todo, need Monad 
+{- todo
 instance Foldable Option where
 -}
 
