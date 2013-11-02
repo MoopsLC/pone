@@ -1,0 +1,8 @@
+define a as 
+    define c as 1 in (1 + (c * 4)) 
+in 
+define b as ((9 * 1) + (16 + 4))
+in 
+procedure func arg1 arg3 is (arg1 + arg2)
+in
+(a + b)
