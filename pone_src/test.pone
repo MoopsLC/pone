@@ -3,6 +3,6 @@ define a as
 in 
 define b as ((9 * 1) + (16 + 4))
 in 
-procedure func arg1 arg2 is (arg1 + arg2)
+define func arg1 arg2 as (arg1 + arg2)
 in
 (func (1 + 2) 2)

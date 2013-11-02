@@ -16,7 +16,7 @@ languageDef = emptyDef{ commentStart = "<"
                       , opStart = oneOf "+*"
                       , opLetter = oneOf "+*"
                       , reservedOpNames = ["+", "*"]
-                      , reservedNames = ["define", "procedure", "as", "in", "is"]
+                      , reservedNames = ["define", "as", "in"]
                       }
     
 TokenParser{ parens = m_parens
@@ -35,12 +35,20 @@ exprParser = buildExpressionParser opTable term <?> "expression"
     
 term = m_parens exprParser
        <|> fmap Value m_number
-       <|> try (do { name <- m_identifier
-                   ; args <- argParser
-                   ; return $ ProcedureEval name args
-                   }
-               )
+       <|> try(do { name <- m_identifier
+                  ; args <- argParser
+                  ; return $ ProcedureEval name args
+                  })
        <|> fmap IdentifierEval m_identifier
+       <|> try(do { m_reserved "define"
+                  ; name <- m_identifier
+                  ; params <- paramParser
+                  ; m_reserved "as"
+                  ; value <- exprParser
+                  ; m_reserved "in"
+                  ; expr <- exprParser
+                  ; return $ ProcedureBind name params value expr
+                  })
        <|> do { m_reserved "define"
               ; name <- m_identifier
               ; m_reserved "as"
@@ -49,26 +57,15 @@ term = m_parens exprParser
               ; expr <- exprParser
               ; return $ IdentifierBind name value expr
               }
-       <|> do { m_reserved "procedure"
-              ; name <- m_identifier
-              ; params <- paramParser
-              ; m_reserved "is"
-              ; value <- exprParser
-              ; m_reserved "in"
-              ; expr <- exprParser
-              ; return $ ProcedureBind name params value expr
-              }
        
 
 spaceSep1 p = sepBy1 p m_whiteSpace
        
-       
-       
 paramParser :: Parser [String]
-paramParser = fmap (id) (spaceSep1 m_identifier)
+paramParser = spaceSep1 m_identifier
      
 argParser :: Parser [Expr]
-argParser = fmap (id) (spaceSep1 exprParser)
+argParser = spaceSep1 exprParser
      
 mainParser :: Parser Expr
 mainParser = m_whiteSpace >> exprParser <* eof

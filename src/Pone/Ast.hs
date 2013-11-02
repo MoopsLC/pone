@@ -16,7 +16,7 @@ module Pone.Ast where
                
     <const-bind> ::= "define" <ident> "as" <expr> "in" <expr>
 
-    <procedure-bind> ::= <ident> <arg> (<arg> *) "is" <expr>
+    <procedure-bind> ::= "define" <ident> <arg> (<arg> *) "as" <expr> in <expr>
            
     <binop> ::= "+" | "*"
 
@@ -30,9 +30,9 @@ module Pone.Ast where
 
 
 data Op = Plus | Times deriving Show
-data Expr = IdentifierBind String Expr Expr 
-          | Value Integer 
+data Expr = Value Integer 
           | Binop Op Expr Expr
+          | IdentifierBind String Expr Expr 
           | IdentifierEval String
           | ProcedureBind String [String] Expr Expr
           | ProcedureEval String [Expr]
