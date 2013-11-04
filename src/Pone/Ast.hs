@@ -4,23 +4,40 @@ module Pone.Ast where
 
   Grammar:
 
+    <program> ::= (<global-def> *) <expr>
 
-    <expr>    ::= <const-bind>
-                | <procedure-bind>
+    <global-def> :: = <type-bind> | <procedure-bind> | <const-bind>
+    
+    <expr>    ::= <local-const-bind>
+                | <local-procedure-bind>
                 | "(" <expr> ")"
                 | <expr> <binop> <expr>
                 | <procedure-eval>
-                | <ident>
+                | <pattern-match>
+                | <value-ident>
                 | <integer>
-                
-               
-    <const-bind> ::= "define" <ident> "as" <expr> "in" <expr>
 
-    <procedure-bind> ::= "define" <ident> <arg> (<arg> *) "as" <expr> in <expr>
+    <const-bind> ::= "define" <value-ident> "as" <expr> "in" <expr>
+    
+    <local-const-bind> ::= <const-bind> "in" <expr>
+    
+    <procedure-bind> ::= "define" <value-ident> <arg> (<arg> *) "as" <expr>
+    
+    <local-procedure-bind> ::= <procedure-bind> "in" <expr>
            
     <binop> ::= "+" | "*"
 
-    <ident> ::= [a-zA-Z][\w]*
+    <pattern> ::= ??? "in"
+    
+    <pattern-match> ::= "see" <expr> "as" <pattern> (<pattern> *)
+    
+    <type-bind> ::= "type" <type-def>
+    
+    <type-def> ::=  <type-ident> (<ident> *)
+    
+    <value-ident> ::= [a-z][\w]*
+    
+    <type-ident> ::= [A-Z][\w]*
     
     <procedure-eval> ::= <itent> (<args> +)
 
@@ -29,12 +46,26 @@ module Pone.Ast where
 -}
 
 
+data PoneProgram = Program {-[GlobalDef]-} Expr
+
+-- data GlobalDef = GlobalProcedureBind ProcedureBind
+               -- | 
+    -- deriving Show
+    
 data Op = Plus | Times deriving Show
-data Expr = Value Integer 
+
+data Typed = PoneInteger Integer 
+           | PoneBoolean Bool 
+   deriving Show
+
+data ProcedureBind = ProcedureBind String [String] Expr Expr
+   deriving Show
+   
+data Expr = Value Typed
           | Binop Op Expr Expr
           | IdentifierBind String Expr Expr 
           | IdentifierEval String
-          | ProcedureBind String [String] Expr Expr
+          | LocalProcedureBind ProcedureBind
           | ProcedureEval String [Expr]
     deriving Show
     

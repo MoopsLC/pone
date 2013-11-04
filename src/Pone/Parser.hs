@@ -34,7 +34,9 @@ exprParser :: Parser Expr
 exprParser = buildExpressionParser opTable term <?> "expression"
     
 term = m_parens exprParser
-       <|> fmap Value m_number
+       <|> do { number <- m_number
+              ; return $ Value $ PoneInteger number
+              }
        <|> try(do { name <- m_identifier
                   ; args <- argParser
                   ; return $ ProcedureEval name args
@@ -47,7 +49,7 @@ term = m_parens exprParser
                   ; value <- exprParser
                   ; m_reserved "in"
                   ; expr <- exprParser
-                  ; return $ ProcedureBind name params value expr
+                  ; return $ LocalProcedureBind (ProcedureBind name params value expr)
                   })
        <|> do { m_reserved "define"
               ; name <- m_identifier
@@ -67,10 +69,13 @@ paramParser = spaceSep1 m_identifier
 argParser :: Parser [Expr]
 argParser = spaceSep1 exprParser
      
-mainParser :: Parser Expr
-mainParser = m_whiteSpace >> exprParser <* eof
+programParser :: Parser PoneProgram
+programParser = fmap Program exprParser
 
-parsePone :: String => Either ParseError Expr
+mainParser :: Parser PoneProgram
+mainParser = m_whiteSpace >> programParser <* eof
+
+parsePone :: String => Either ParseError PoneProgram
 parsePone src = parse mainParser "" src
 
 

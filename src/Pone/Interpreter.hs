@@ -22,11 +22,12 @@ pushName env name value = Map.insert name value env
 lookupName :: Environment -> String -> Integer
 lookupName env name = env Map.! name --fixme, handle unbound names
 
-poneEval :: Expr -> Integer
-poneEval = eval Map.empty Map.empty 
+poneEval :: PoneProgram -> Integer
+poneEval (Program expr) = eval Map.empty Map.empty expr
+
 eval :: Environment -> ProcedureMap -> Expr -> Integer
 eval env procs expr = case expr of
-    Value i -> i 
+    Value (PoneInteger i) -> i 
     Binop op e1 e2 -> let v1 = eval env procs e1
                           v2 = eval env procs e2
                       in case op of 
@@ -37,7 +38,7 @@ eval env procs expr = case expr of
     IdentifierBind name v e -> let value = eval env procs v
                                    newState = pushName env name value
                                in eval newState procs e
-    ProcedureBind name args value expr ->  --make sure no repeat args
+    LocalProcedureBind (ProcedureBind name args value expr) ->  --make sure no repeat args
         let newProcs = pushDef procs name (ProcedureDef name args value) in 
         eval env newProcs expr
     ProcedureEval name args -> 
