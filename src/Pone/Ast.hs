@@ -46,26 +46,30 @@ module Pone.Ast where
 -}
 
 
-data PoneProgram = Program {-[GlobalDef]-} Expr
+data PoneProgram = Program [GlobalDef] Expr
 
--- data GlobalDef = GlobalProcedureBind ProcedureBind
-               -- | 
-    -- deriving Show
+data GlobalDef = GlobalProcedureBind ProcedureBind
+               | GlobalIdentifierBind IdentifierBind
+    deriving Show
     
-data Op = Plus | Times deriving Show
+data Op = Plus | Times
+    deriving Show
 
 data Typed = PoneInteger Integer 
            | PoneBoolean Bool 
    deriving Show
 
-data ProcedureBind = ProcedureBind String [String] Expr Expr
+data ProcedureBind = ProcedureBind String [String] Expr 
    deriving Show
+   
+data IdentifierBind = IdentifierBind String Expr
+    deriving Show
    
 data Expr = Value Typed
           | Binop Op Expr Expr
-          | IdentifierBind String Expr Expr 
+          | LocalIdentifierBind IdentifierBind Expr 
           | IdentifierEval String
-          | LocalProcedureBind ProcedureBind
+          | LocalProcedureBind ProcedureBind Expr
           | ProcedureEval String [Expr]
     deriving Show
     

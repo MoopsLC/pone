@@ -49,7 +49,7 @@ term = m_parens exprParser
                   ; value <- exprParser
                   ; m_reserved "in"
                   ; expr <- exprParser
-                  ; return $ LocalProcedureBind (ProcedureBind name params value expr)
+                  ; return $ LocalProcedureBind (ProcedureBind name params value) expr
                   })
        <|> do { m_reserved "define"
               ; name <- m_identifier
@@ -57,10 +57,27 @@ term = m_parens exprParser
               ; value <- exprParser
               ; m_reserved "in"
               ; expr <- exprParser
-              ; return $ IdentifierBind name value expr
+              ; return $ LocalIdentifierBind (IdentifierBind name value) expr
               }
        
-
+       
+       
+--refactor to get these both from the same place
+globalDefParser :: Parser GlobalDef
+globalDefParser = try(do { m_reserved "define"
+                         ; name <- m_identifier
+                         ; params <- paramParser
+                         ; m_reserved "as"
+                         ; value <- exprParser 
+                         ; return $ GlobalProcedureBind (ProcedureBind name params value)
+                         })
+                  <|> try(do { m_reserved "define"
+                             ; name <- m_identifier
+                             ; m_reserved "as"
+                             ; value <- exprParser 
+                             ; return $ GlobalIdentifierBind (IdentifierBind name value)
+                             })
+       
 spaceSep1 p = sepBy1 p m_whiteSpace
        
 paramParser :: Parser [String]
@@ -70,7 +87,10 @@ argParser :: Parser [Expr]
 argParser = spaceSep1 exprParser
      
 programParser :: Parser PoneProgram
-programParser = fmap Program exprParser
+programParser = do { globalDefs <- spaceSep1 globalDefParser
+                   ; expr <- exprParser
+                   ; return $ Program globalDefs expr
+                   }
 
 mainParser :: Parser PoneProgram
 mainParser = m_whiteSpace >> programParser <* eof

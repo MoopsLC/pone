@@ -20,8 +20,3 @@ main = do
     case parsePone source of 
        Left err -> print err
        Right ast -> print $ poneEval ast
-    
-
-
-
-       
