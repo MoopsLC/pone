@@ -1,4 +1,4 @@
-{-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE NoMonomorphismRestriction, TemplateHaskell #-}
 import System.IO
 import Data.Monoid
 import Data.Functor
@@ -9,20 +9,21 @@ import Pone.Parser
 import Pone.Interpreter
 import Debug.Trace
 
-import Control.Exception
+import Control.Lens
 
-sources = [("C:/Users/M/Desktop/pone/pone_src/test2.pone", "second test", 12)] --todo load test results from disk
+sources = [("C:/Users/M/Desktop/pone/pone_src/test.pone", "second test", 12)] --todo load test results from disk
 
 data PoneTest = Test String String Integer
 type TestResult = Either String (Bool, String)
 
-extract :: (a -> Bool) -> String -> (a -> (Bool, String))
-extract f description = (\x -> (f x, description))
+extract :: Show a => (a -> Bool) -> String -> (a -> (Bool, String))
+extract f description = (\x -> (f x, description ++ " got " ++ (show x)))
 
 runTest :: PoneTest -> IO (Either String (Bool, String))
 runTest (Test filename description expectedValue) = do
     result :: Either String Integer <- testFile filename
-    return $ fmap (extract ((==) expectedValue) description) result
+    return $ fmap (extract ((==) expectedValue) makeString) result
+    where makeString = description ++ ": expected " ++ (show expectedValue)
 
     
 assembleResult :: Either String (Bool, String) -> String
@@ -34,25 +35,11 @@ assembleResult (Right (passed, description)) =
 main = let results :: IO [Either String (Bool, String)] = mapM runTest ((map . uncurry3) Test sources) in do
     list :: [Either String (Bool, String)] <- results
     print $ map assembleResult list
-    -- _ <- print $ length list--prints 1
-    -- _ <- mapM print list--does not print
-    -- print "test"
        
 testFile :: String -> IO (Either String Integer)
 testFile filename = do
     source <- readFile filename
-    return $ fmap poneEval $ parsePone source {-of 
-       Left err -> trace (show err) Nothing
-       Right ast -> Just $ poneEval ast-}
-       
-      
--- checkSource :: (String, Integer) -> IO (Maybe Bool)
--- checkSource (filename,result) = do
-    -- evaluated <- testFile filename
-    -- return $ do
-        -- value <- evaluated
-        -- let testResult = value == result 
-            -- in return $ testResult
+    return $ fmap poneEval $ parsePone source
 
 
             
@@ -73,4 +60,17 @@ writerAddLists xs ys = do
     ysl :: [a] <- logWriter "heres ys" ys
     return $ xsl ++ ysl
     
+    
+ -- {-of 
+       -- Left err -> trace (show err) Nothing
+       -- Right ast -> Just $ poneEval ast-}
+       
+      
+-- checkSource :: (String, Integer) -> IO (Maybe Bool)
+-- checkSource (filename,result) = do
+    -- evaluated <- testFile filename
+    -- return $ do
+        -- value <- evaluated
+        -- let testResult = value == result 
+            -- in return $ testResult
     
