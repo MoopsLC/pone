@@ -8,13 +8,8 @@ import qualified Data.Map as Map
 import Pone.Parser
 import Pone.Interpreter
 import Debug.Trace
-
+import System.Directory
 import Control.Lens
-
-sources = ["C:/Users/M/Desktop/pone/pone_src/test.pone"
-          ,"C:/Users/M/Desktop/pone/pone_src/test2.pone"
-          ] --todo load test results from disk
-
     
 data PoneTest = Test String String String Integer
 type TestResult = Either String (Bool, String)
@@ -34,7 +29,7 @@ linesToTest (x:y:xs) = (unlines xs, drop 8 y, read $ drop 8 x)
 extract :: Show a => (a -> Bool) -> String -> (a -> (Bool, String))
 extract f description = (\x -> (f x, description ++ " got " ++ (show x)))
 
-runTest :: PoneTest -> IO (Either String (Bool, String))
+runTest :: PoneTest -> IO TestResult
 runTest (Test filename source description expectedValue) = do
     result :: Either String Integer <- testSource source
     return $ fmap (extract ((==) expectedValue) makeString) result
@@ -50,8 +45,15 @@ assembleResult (Right (passed, description)) =
 testSource :: String -> IO (Either String Integer)
 testSource source = return $ fmap poneEval $ parsePone source
 
+isFile :: FilePath -> Bool
+isFile [] = False
+isFile ('.':[]) = False
+isFile ('.':'.':xs) = False
+isFile other = True
+
 main = do
-    tests :: [PoneTest] <- sequence $ map loadTest sources 
+    sources :: [FilePath] <- getDirectoryContents root
+    tests :: [PoneTest] <- sequence $ map loadTest $ map (root ++ ) $ filter isFile sources 
     results :: [TestResult] <- sequence $ map runTest tests
     print $ map assembleResult results
-
+    where root = "C:/Users/M/Desktop/pone/pone_src/"
