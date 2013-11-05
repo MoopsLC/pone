@@ -1,3 +1,5 @@
+comment 12
+comment first test
 define is10 as 10
 define always5 a b c as 5
 

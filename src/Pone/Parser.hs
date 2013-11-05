@@ -11,6 +11,7 @@ import Pone.Ast
 
 languageDef = emptyDef{ commentStart = "<"
                       , commentEnd = ">"
+                      , commentLine = "comment"
                       , identStart = letter
                       , identLetter = alphaNum
                       , opStart = oneOf "+*"
