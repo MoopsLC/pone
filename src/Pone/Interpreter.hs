@@ -43,10 +43,7 @@ bind env def = case def of
         let evaluated = eval env value in
         pushName env name evaluated
 
-mapFold :: Ord k => Map.Map k v -> [(k, v)] -> Map.Map k v
-mapFold map [] = map
-mapFold map ((param, value):xs) = mapFold (Map.insert param value map) xs
-    
+
 envMultiBind :: Environment -> [(String, Integer)] -> Environment
 envMultiBind env [] = env
 envMultiBind env ((param, value):xs) = envMultiBind (pushName env param value) xs

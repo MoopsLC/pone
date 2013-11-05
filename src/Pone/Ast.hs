@@ -57,10 +57,10 @@ data Op = Plus | Times
 
 data Typed = PoneInteger Integer 
            | PoneBoolean Bool 
-   deriving Show
+    deriving Show
 
 data ProcedureBind = ProcedureBind String [String] Expr 
-   deriving Show
+    deriving Show
    
 data IdentifierBind = IdentifierBind String Expr
     deriving Show
