@@ -1,12 +1,4 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
-
-import Learning.Tree
-import Learning.Foldable
-import Learning.List
-import Learning.PFunctor
-import Learning.Applicative
-import Learning.Option
-import Learning.RandomStuff
 import System.IO
 import Data.Monoid
 
@@ -15,8 +7,25 @@ import qualified Data.Map as Map
 import Pone.Parser
 import Pone.Interpreter
 
-main = do
-    source <- readFile "C:/Users/M/Desktop/pone/pone_src/test.pone"
-    case parsePone source of 
-       Left err -> print err
-       Right ast -> print $ poneEval ast
+import Debug.Trace
+
+main = checkSource "C:/Users/M/Desktop/pone/pone_src/test2.pone" 8
+       
+testFile :: String -> IO (Maybe Integer)
+testFile filename = do
+    source <- readFile filename
+    return $ case parsePone source of 
+       Left err -> trace (show err) Nothing
+       Right ast -> Just $ poneEval ast
+       
+      
+checkSource :: String -> Integer -> IO (Maybe Bool)
+checkSource filename result = do
+    evaluated <- testFile filename
+    return $ do
+        value <- evaluated
+        return $ value == result
+
+
+    
+    

@@ -20,7 +20,9 @@ pushName :: Environment -> String -> Integer -> Environment
 pushName env name value = Map.insert name value env
 
 lookupName :: Environment -> String -> Integer
-lookupName env name = env Map.! name --fixme, handle unbound names
+lookupName env name = traceShow name $ env Map.! name --fixme, handle unbound names
+
+
 
 poneEval :: PoneProgram -> Integer
 poneEval (Program globals expr) = 
