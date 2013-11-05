@@ -28,10 +28,8 @@ poneEval :: PoneProgram -> Integer
 poneEval (Program globals expr) = 
     let (env, procs) = foldl (\acc def -> bind acc def) (Map.empty, Map.empty) globals
     in eval env procs expr
+
     
-
-
-
 bind :: (Environment,ProcedureMap) -> GlobalDef -> (Environment, ProcedureMap)
 bind (env, procs) def = case def of
     GlobalProcedureBind (ProcedureBind name parameters body) ->
@@ -39,14 +37,10 @@ bind (env, procs) def = case def of
     GlobalIdentifierBind (IdentifierBind name value) -> 
         let evaluated = eval env procs value in
         ((pushName env name evaluated), procs)
-       
-
 
 mapFold :: Ord k => Map.Map k v -> [(k, v)] -> Map.Map k v
 mapFold map [] = map
 mapFold map ((param, value):xs) = mapFold (Map.insert param value map) xs
-
-
     
 eval :: Environment -> ProcedureMap -> Expr -> Integer
 eval env procs expr = case expr of

@@ -95,7 +95,11 @@ programParser = do { globalDefs <- spaceSep1 globalDefParser
 mainParser :: Parser PoneProgram
 mainParser = m_whiteSpace >> programParser <* eof
 
-parsePone :: String => Either ParseError PoneProgram
-parsePone src = parse mainParser "" src
+convertError :: Either ParseError PoneProgram -> Either String PoneProgram
+convertError (Left err) = Left $ show err
+convertError (Right prog) = Right prog
+
+parsePone :: String -> Either String PoneProgram
+parsePone src = convertError $ parse mainParser "" src
 
 
