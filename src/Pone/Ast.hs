@@ -50,8 +50,7 @@ data GlobalDef = GlobalProcedureBind ProcedureBind
                | GlobalIdentifierBind IdentifierBind
     deriving Show
 
-data Typed = PoneInteger Integer 
-           | PoneBoolean Bool 
+data Typed = PoneInteger Integer
     deriving Show
 
 data ProcedureBind = ProcedureBind String [String] Expr 

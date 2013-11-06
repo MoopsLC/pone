@@ -25,12 +25,7 @@ TokenParser{ parens = m_parens
            , reservedOp = m_reservedOp
            , reserved = m_reserved
            , whiteSpace = m_whiteSpace } = makeTokenParser languageDef
-        
 
-        
---exprParser :: Parser Expr
---exprParser = buildExpressionParser opTable term <?> "expression"
-    
 exprParser = m_parens exprParser
        -- <|> fmap IdentifierEval m_identifier
         <|> do { number <- m_number
