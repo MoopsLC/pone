@@ -6,13 +6,12 @@ module Pone.Ast where
 
     <program> ::= (<global-def> *) <expr>
 
-    <global-def> :: = <type-bind> | <procedure-bind> | <const-bind>
+    <global-def> :: = (<type-bind> | <procedure-bind> | <const-bind>) ";"
     
     <expr>    ::= <local-const-bind>
                 | <local-procedure-bind>
                 | "(" <expr> ")"
                 | <procedure-eval>
-                | <pattern-match>
                 | <value-ident>
                 | <integer>
 
@@ -24,13 +23,9 @@ module Pone.Ast where
     
     <local-procedure-bind> ::= <procedure-bind> "in" <expr>
 
-    <pattern> ::= ??? "in"
+    <type-bind> ::= "type" <type-ident> "is" <type-def>
     
-    <pattern-match> ::= "see" <expr> "as" <pattern> (<pattern> *)
-    
-    <type-bind> ::= "type" <type-def>
-    
-    <type-def> ::=  <type-ident> (<ident> *)
+    <type-def> ::=  <type-ident> ( "|" <type-def> *)
     
     <value-ident> ::= [a-z][\w]*
     
