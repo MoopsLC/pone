@@ -7,9 +7,10 @@ import qualified Data.Map as Map
 
 import Pone.Parser
 import Pone.Interpreter
+import Pone.Ast
+
 import Debug.Trace
 import System.Directory
-import Control.Lens
     
 data PoneTest = Test String String String Integer
 type TestResult = Either String (Bool, String)
@@ -42,8 +43,20 @@ assembleResult (Right (passed, description)) =
     let passString = if (passed) then "PASS: " else "FAIL: " in
     passString ++ description
        
+-- Either String a -> (a -> IO (Either String b)) -> IO (Either String b)
+       -- parsePone source >>= poneEval
+-- m a -> (a -> m b) -> m b
 testSource :: String -> IO (Either String Integer)
-testSource source = return $ fmap poneEval $ parsePone source
+testSource source = case parsePone source of
+    Left error -> return $ Left error
+    Right ast -> poneEval ast
+
+
+-- Either String PoneProgram
+    -- fromIo :: Either String Integer <- poneEval ast
+    -- return fromIo
+-- return $ fmap poneEval ast
+    -- where ast = parsePone source
 
 isFile :: FilePath -> Bool
 isFile [] = False

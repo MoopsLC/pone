@@ -4,6 +4,7 @@ import qualified Data.Map as Map
 
 import Debug.Trace
 import Control.Lens
+import Control.Exception
 
 import Pone.Ast
 import Pone.Parser    
@@ -29,11 +30,19 @@ pushName env name value = names %~ Map.insert name value $ env
 lookupName :: Environment -> String -> Integer
 lookupName env name = (Map.!) (env ^. names) name --fixme, handle unbound names
 
-poneEval :: PoneProgram -> Integer
-poneEval (Program globals expr) = 
-    let env = foldl (\acc def -> bind acc def) makeEnv globals
-    in eval env expr
+tryAny :: IO a -> IO (Either SomeException a)
+tryAny = Control.Exception.try
 
+showException :: Either SomeException a -> Either String a
+showException (Left exc) = Left $ ("Interpreter: " ++ ) $ show exc
+showException (Right x) = Right x
+
+poneEval :: PoneProgram -> IO (Either String Integer)
+poneEval (Program globals expr) = 
+    let env = foldl bind makeEnv globals
+    in do
+        r <- tryAny (evaluate $ eval env expr)
+        evaluate $ showException r
     
 bind :: Environment -> GlobalDef -> Environment
 bind env def = case def of
