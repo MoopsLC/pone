@@ -43,15 +43,7 @@ term = m_parens exprParser
                   ; return $ ProcedureEval name args
                   })
        <|> fmap IdentifierEval m_identifier
-       <|> try(do { m_reserved "define"
-                  ; name <- m_identifier
-                  ; params <- paramParser
-                  ; m_reserved "as"
-                  ; value <- exprParser
-                  ; m_reserved "in"
-                  ; expr <- exprParser
-                  ; return $ LocalProcedureBind (ProcedureBind name params value) expr
-                  })
+       
        <|> do { m_reserved "define"
               ; name <- m_identifier
               ; m_reserved "as"
@@ -60,7 +52,15 @@ term = m_parens exprParser
               ; expr <- exprParser
               ; return $ LocalIdentifierBind (IdentifierBind name value) expr
               }
-       
+        <|> do { m_reserved "define"
+              ; name <- m_identifier
+              ; params <- paramParser
+              ; m_reserved "as"
+              ; value <- exprParser
+              ; m_reserved "in"
+              ; expr <- exprParser
+              ; return $ LocalProcedureBind (ProcedureBind name params value) expr
+              }
        
        
 --refactor to get these both from the same place
@@ -72,12 +72,12 @@ globalDefParser = try(do { m_reserved "define"
                          ; value <- exprParser 
                          ; return $ GlobalProcedureBind (ProcedureBind name params value)
                          })
-                  <|> try(do { m_reserved "define"
-                             ; name <- m_identifier
-                             ; m_reserved "as"
-                             ; value <- exprParser 
-                             ; return $ GlobalIdentifierBind (IdentifierBind name value)
-                             })
+                  <|> do { m_reserved "define"
+                         ; name <- m_identifier
+                         ; m_reserved "as"
+                         ; value <- exprParser 
+                         ; return $ GlobalIdentifierBind (IdentifierBind name value)
+                         }
        
 spaceSep1 p = sepBy1 p m_whiteSpace
        
@@ -88,7 +88,7 @@ argParser :: Parser [Expr]
 argParser = spaceSep1 exprParser
      
 programParser :: Parser PoneProgram
-programParser = do { globalDefs <- spaceSep1 globalDefParser
+programParser = do { globalDefs <- many globalDefParser
                    ; expr <- exprParser
                    ; return $ Program globalDefs expr
                    }

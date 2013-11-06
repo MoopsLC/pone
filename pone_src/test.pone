@@ -1,13 +1,4 @@
-comment 12
-comment first test
+comment 20
+comment global constant test
 define is10 as 10
-define always5 a b c as 5
-
-(define a as 
-    define c as 1 in (1 + (c * 4)) 
-in 
-define b as ((9 * 1) + (16 + 4))
-in 
-define func arg1 arg2 as (arg1 + arg2)
-in
-(func (1 + 2) (always5 is10 1 1)))
+(is10 + is10)

@@ -1,0 +1,5 @@
+comment 4
+comment re bound name
+define a as 1
+define a as (a + 1)
+(a + a)

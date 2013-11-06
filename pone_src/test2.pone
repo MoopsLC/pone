@@ -1,5 +1,5 @@
 comment 4
-comment second test
+comment multiple global constants
 define a as 1
-define a as (a + 1)
-(a + a)
+define b as 3
+(a + b)
