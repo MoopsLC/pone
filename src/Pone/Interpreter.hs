@@ -91,14 +91,18 @@ eval env expr = case expr of
         Just value -> return value
         Nothing -> Left ("Unbound name: " ++ (show s))
     
-    ProcedureEval name args -> do
-        -- [Either String Integer] -> Either String [Integer]
-        evaluated :: [Integer] <- sequence $ map (eval env) args-- :: [Either String Integer]
-        case lookupProc env name of 
-            Just (ProcedureDef name params expr) ->
-                let zipped :: [(String, Integer)] = zip params evaluated -- make sure same length
-                    newEnv :: Environment = envMultiBind env zipped 
-                in eval newEnv expr
-            Nothing -> Left $ "Unbound procedure: " ++ (show name) ++ (show expr)
+    ProcedureEval name args -> case name of
+        "add" -> do v1 <- eval env (args !! 0)
+                    v2 <- eval env (args !! 1)
+                    return $ (v1 + v2)
+        other -> do
+            -- [Either String Integer] -> Either String [Integer]
+            evaluated :: [Integer] <- sequence $ map (eval env) args-- :: [Either String Integer]
+            case lookupProc env other of 
+                Just (ProcedureDef other params expr) ->
+                    let zipped :: [(String, Integer)] = zip params evaluated -- make sure same length
+                        newEnv :: Environment = envMultiBind env zipped 
+                    in eval newEnv expr
+                Nothing -> Left $ "Unbound procedure: " ++ (show other) ++ (show expr)
 
 --failFirst :: [Either a b] -> Either a [b]  

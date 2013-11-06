@@ -16,9 +16,6 @@ languageDef = emptyDef{ commentStart = "<"
                       , commentLine = "comment"
                       , identStart = letter
                       , identLetter = alphaNum
-                      --, opStart = oneOf "+*"
-                      --, opLetter = oneOf "+*"
-                      --, reservedOpNames = ["+", "*"]
                       , reservedNames = ["define", "as", "in", ";"]
                       }
     
@@ -59,7 +56,7 @@ exprParser = m_parens exprParser
         
        
 globalDefParser :: Parser GlobalDef
-                  --try removing this try
+                  --fixme, this usually leads to the whole program being parsed twice
 globalDefParser = try(do { m_reserved "define"
                          ; name <- m_identifier
                          ; params <- try (many m_identifier) <|> return []
