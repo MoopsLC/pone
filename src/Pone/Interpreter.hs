@@ -70,13 +70,13 @@ envMultiBind env ((param, value):xs) = envMultiBind (pushName env param value) x
 
 eval :: Environment -> Expr -> Either RuntimeError Integer
 eval env expr = case expr of
-    Value (PoneInteger i) -> Right i 
-    Binop op e1 e2 -> do
-        v1 <- eval env e1
-        v2 <- eval env e2
-        return $ case op of 
-            Plus -> v1 + v2
-            Times -> v1 * v2
+    Value (PoneInteger i) -> return i 
+    -- Binop op e1 e2 -> do
+        -- v1 <- eval env e1
+        -- v2 <- eval env e2
+        -- return $ case op of 
+            -- Plus -> v1 + v2
+            -- Times -> v1 * v2
                                  
     LocalIdentifierBind (IdentifierBind name v) e -> do
         value <- eval env v

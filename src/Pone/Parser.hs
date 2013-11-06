@@ -16,10 +16,10 @@ languageDef = emptyDef{ commentStart = "<"
                       , commentLine = "comment"
                       , identStart = letter
                       , identLetter = alphaNum
-                      , opStart = oneOf "+*"
-                      , opLetter = oneOf "+*"
-                      , reservedOpNames = ["+", "*"]
-                      , reservedNames = ["define", "as", "in"]
+                      --, opStart = oneOf "+*"
+                      --, opLetter = oneOf "+*"
+                      --, reservedOpNames = ["+", "*"]
+                      , reservedNames = ["define", "as", "in", ";"]
                       }
     
 TokenParser{ parens = m_parens
@@ -29,14 +29,12 @@ TokenParser{ parens = m_parens
            , reserved = m_reserved
            , whiteSpace = m_whiteSpace } = makeTokenParser languageDef
         
-opTable = [ [Infix (m_reservedOp "+" >> return (Binop Plus)) AssocLeft]
-          , [Infix (m_reservedOp "*" >> return (Binop Times)) AssocLeft]
-          ]
+
         
-exprParser :: Parser Expr
-exprParser = buildExpressionParser opTable term <?> "expression"
+--exprParser :: Parser Expr
+--exprParser = buildExpressionParser opTable term <?> "expression"
     
-term = m_parens exprParser
+exprParser = m_parens exprParser
        -- <|> fmap IdentifierEval m_identifier
         <|> do { number <- m_number
                ; return $ Value $ PoneInteger number
@@ -60,17 +58,18 @@ term = m_parens exprParser
                }
         
        
---refactor to get these both from the same place
 globalDefParser :: Parser GlobalDef
-globalDefParser = do { m_reserved "define"
-                     ; name <- m_identifier
-                     ; params <- try (many m_identifier) <|> return []
-                     ; m_reserved "as"
-                     ; value <- exprParser 
-                     ; return $ case params of
-                         [] -> GlobalIdentifierBind (IdentifierBind name value)
-                         xs -> GlobalProcedureBind (ProcedureBind name xs value)
-                     }
+                  --try removing this try
+globalDefParser = try(do { m_reserved "define"
+                         ; name <- m_identifier
+                         ; params <- try (many m_identifier) <|> return []
+                         ; m_reserved "as"
+                         ; value <- exprParser 
+                         ; m_reserved ";"
+                         ; return $ case params of
+                             [] -> GlobalIdentifierBind (IdentifierBind name value)
+                             xs -> GlobalProcedureBind (ProcedureBind name xs value)
+                         })
        
 spaceSep1 p = sepBy1 p m_whiteSpace
        
@@ -99,6 +98,6 @@ printAst arg = case arg of
     Right ast -> trace (show ast) arg
 
 parsePone :: String -> Either String PoneProgram
-parsePone src = convertError $ printAst $ parse mainParser "" src
+parsePone src = convertError $ {-printAst $-} parse mainParser "" src
 
 

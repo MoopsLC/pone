@@ -1,7 +1,5 @@
-define f a b as (a + b)
-define arb a as
-    (define doubleSum a b as (a + a + b + b) in
-    (doubleSum a a)) in
+define f a b as (a);
+define arb a as (define doubleSum a b as (a) in (doubleSum a)) in
 (arb 1)
-comment 4
-comment re-bound name
+comment 1
+comment nested define

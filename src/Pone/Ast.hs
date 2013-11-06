@@ -11,7 +11,6 @@ module Pone.Ast where
     <expr>    ::= <local-const-bind>
                 | <local-procedure-bind>
                 | "(" <expr> ")"
-                | <expr> <binop> <expr>
                 | <procedure-eval>
                 | <pattern-match>
                 | <value-ident>
@@ -24,8 +23,6 @@ module Pone.Ast where
     <procedure-bind> ::= "define" <value-ident> <arg> (<arg> *) "as" <expr>
     
     <local-procedure-bind> ::= <procedure-bind> "in" <expr>
-           
-    <binop> ::= "+" | "*"
 
     <pattern> ::= ??? "in"
     
@@ -51,9 +48,6 @@ data PoneProgram = Program [GlobalDef] Expr
 data GlobalDef = GlobalProcedureBind ProcedureBind
                | GlobalIdentifierBind IdentifierBind
     deriving Show
-    
-data Op = Plus | Times
-    deriving Show
 
 data Typed = PoneInteger Integer 
            | PoneBoolean Bool 
@@ -66,7 +60,6 @@ data IdentifierBind = IdentifierBind String Expr
     deriving Show
    
 data Expr = Value Typed
-          | Binop Op Expr Expr
           | LocalIdentifierBind IdentifierBind Expr 
           | IdentifierEval String
           | LocalProcedureBind ProcedureBind Expr
