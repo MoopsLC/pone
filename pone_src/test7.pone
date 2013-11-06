@@ -1,0 +1,7 @@
+define f a b as (a + b)
+define arb a as
+    (define doubleSum a b as (a + a + b + b) in
+    (doubleSum a a)) in
+(arb 1)
+comment 4
+comment re-bound name

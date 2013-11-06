@@ -1,4 +1,4 @@
-comment 20
-comment global constant test
 define is10 as 10
 (is10 + is10)
+comment 20
+comment global constant test

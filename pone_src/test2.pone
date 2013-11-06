@@ -1,5 +1,5 @@
-comment 4
-comment multiple global constants
 define a as 1
 define b as 3
 (a + b)
+comment 4
+comment multiple global constants

@@ -26,7 +26,8 @@ makeTest :: String -> (String, String, Integer) -> PoneTest
 makeTest name (source, desc, val) = Test name source desc val
   
 linesToTest :: [String] -> (String, String, Integer)
-linesToTest (x:y:xs) = (unlines xs, drop 8 y, read $ drop 8 x)
+linesToTest lines = let (x:y:xs) = reverse lines in
+    (unlines (reverse xs), drop 8 x, read $ drop 8 y)
     
 extract :: Show a => (a -> Bool) -> String -> (a -> (Bool, String))
 extract f description = (\x -> (f x, description ++ " got " ++ (show x)))
@@ -66,7 +67,7 @@ combine :: Monoid a => (a -> a) -> (a, a) -> a
 combine f (s,r) = (f s) `mappend` r
 
 main = do
-    sources :: [FilePath] <- (liftM . filter) isFile $ getDirectoryContents root --return ["test5.pone"]--
+    sources :: [FilePath] <- (liftM . filter) isFile $ liftM reverse $ getDirectoryContents root --return ["test6.pone"]--
     tests :: [PoneTest] <- mapM (loadTest . (root ++))  sources 
     results :: [TestResult] <- mapM runTest tests
     let testResults :: [String] = map ((++ "\n" ) . printResult) results in

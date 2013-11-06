@@ -47,7 +47,7 @@ module Pone.Ast where
 
 
 data PoneProgram = Program [GlobalDef] Expr
-
+    deriving Show
 data GlobalDef = GlobalProcedureBind ProcedureBind
                | GlobalIdentifierBind IdentifierBind
     deriving Show

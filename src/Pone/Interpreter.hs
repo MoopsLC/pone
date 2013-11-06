@@ -58,9 +58,9 @@ printInline a b = (trace (show a)) b
 bind :: Environment -> GlobalDef -> Either RuntimeError Environment
 bind env def = case def of
     GlobalProcedureBind (ProcedureBind name parameters body) ->
-        return $ trace ("here i am binding proc " ++ name) $ pushProc env name $ ProcedureDef name parameters body
+        return $ pushProc env name $ ProcedureDef name parameters body
     GlobalIdentifierBind (IdentifierBind name value) -> do
-        evaluated <- printInline env $ trace ("here i am binding name " ++ name) $ eval env value
+        evaluated <- eval env value
         return $ pushName env name evaluated
 
 

@@ -1,5 +1,5 @@
-comment 4
-comment re bound name
-define a as 1
-define a as (a + 1)
+define a as 1 in
+define a as (a + 1) in
 (a + a)
+comment 4
+comment re-bound name
