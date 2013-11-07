@@ -38,16 +38,23 @@ module Pone.Ast where
 -}
 
 
+type TypeIdent = String
+
 data PoneProgram = Program [GlobalDef] Expr
     deriving Show
     
 data GlobalDef = GlobalProcedureBind ProcedureBind
                | GlobalIdentifierBind IdentifierBind
+               | GlobalTypeBind TypeBind
+               
     deriving Show
 
 data Typed = PoneInteger Integer
     deriving Show
 
+data TypeBind = TypeBind String [TypeIdent]
+    deriving Show
+    
 data ProcedureBind = ProcedureBind String [String] Expr 
     deriving Show
    

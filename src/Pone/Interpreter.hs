@@ -62,7 +62,7 @@ bind env def = case def of
     GlobalIdentifierBind (IdentifierBind name value) -> do
         evaluated <- eval env value
         return $ pushName env name evaluated
-
+    GlobalTypeBind (TypeBind name ctors) -> return env
 
 envMultiBind :: Environment -> [(String, Integer)] -> Environment
 envMultiBind env [] = env
