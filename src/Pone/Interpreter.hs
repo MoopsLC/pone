@@ -15,12 +15,13 @@ import Pone.Parser
 type RuntimeError = String
       
 data ProcedureDef = ProcedureDef String [String] Expr deriving Show
-
+data TypeDef = TypeDef String [String] deriving Show
 data Environment = Environment { _names :: Map.Map String Integer
                                , _procs :: Map.Map String ProcedureDef
+                               , _types :: Map.Map String TypeDef
                                } deriving Show
 
-makeEnv = Environment Map.empty Map.empty
+makeEnv = Environment Map.empty Map.empty Map.empty
             
 makeLenses ''Environment 
 
@@ -35,6 +36,12 @@ pushName env name value = names %~ Map.insert name value $ env
 
 lookupName :: Environment -> String -> Maybe Integer
 lookupName env name = Map.lookup name (env ^. names)
+
+pushType :: Environment -> String -> TypeDef -> Environment
+pushType env name type' = types %~ Map.insert name type' $ env
+
+lookupType :: Environment -> String -> Maybe TypeDef
+lookupType env name = Map.lookup name (env ^. types)
 
 tryAny :: IO a -> IO (Either SomeException a)
 tryAny = Control.Exception.try
@@ -71,12 +78,6 @@ envMultiBind env ((param, value):xs) = envMultiBind (pushName env param value) x
 eval :: Environment -> Expr -> Either RuntimeError Integer
 eval env expr = case expr of
     Value (PoneInteger i) -> return i 
-    -- Binop op e1 e2 -> do
-        -- v1 <- eval env e1
-        -- v2 <- eval env e2
-        -- return $ case op of 
-            -- Plus -> v1 + v2
-            -- Times -> v1 * v2
                                  
     LocalIdentifierBind (IdentifierBind name v) e -> do
         value <- eval env v
@@ -92,7 +93,7 @@ eval env expr = case expr of
         Nothing -> Left ("Unbound name: " ++ (show s))
     
     ProcedureEval name args -> case name of
-        "add" -> do v1 <- eval env (args !! 0)
+        "add" -> do v1 <- eval env (args !! 0) --fixme 
                     v2 <- eval env (args !! 1)
                     return $ (v1 + v2)
         other -> do

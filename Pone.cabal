@@ -17,7 +17,7 @@ cabal-version:       >=1.8
 executable Pone
   main-is:             Main.hs
   --might be a bit conservative but i am clueless
-  build-depends:       base ==4.6.*, parsec ==3.1.*, containers ==0.5.*, utility-ht, lens, directory
+  build-depends:       base ==4.6.*, parsec ==3.1.*, containers ==0.5.*, utility-ht, lens, directory, text
   hs-source-dirs:      src
   extensions:          ScopedTypeVariables, FlexibleInstances, NoMonomorphismRestriction,BangPatterns 
   ghc-options:         -O0

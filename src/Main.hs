@@ -3,6 +3,7 @@ import System.IO
 import Control.Monad
 import Data.Monoid
 import Data.Functor
+import Data.Text (unpack, strip, pack)
 import Data.Tuple.HT (uncurry3)
 import qualified Data.Map as Map
 
@@ -63,13 +64,16 @@ isFile ('.':[]) = False
 isFile ('.':'.':xs) = False
 isFile other = True
 
-combine :: Monoid a => (a -> a) -> (a, a) -> a
-combine f (s,r) = (f s) `mappend` r
+combine :: Monoid a => (a -> a) -> a -> a -> a
+combine f s r = (f s) `mappend` r
+
+trim :: String -> String
+trim s = unpack $ strip $ pack $ s
 
 main = do
     sources :: [FilePath] <- (liftM . filter) isFile $ liftM reverse $ getDirectoryContents root --return ["test6.pone"]--
     tests :: [PoneTest] <- mapM (loadTest . (root ++))  sources 
     results :: [TestResult] <- mapM runTest tests
     let testResults :: [String] = map ((++ "\n" ) . printResult) results in
-        putStrLn $ unlines $ map (combine (++ "\n")) $ zip sources testResults
+        putStrLn $ trim $ unlines $ map ((uncurry . combine) (++ "\n")) $ zip sources testResults
     where root = "C:/Users/M/Desktop/pone/pone_src/"

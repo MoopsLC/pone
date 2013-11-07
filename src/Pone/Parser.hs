@@ -6,13 +6,9 @@ import Text.Parsec.String
 import Text.Parsec.Expr
 import Text.Parsec.Token
 import Text.Parsec.Language
-
 import Debug.Trace
 
 import Pone.Ast
-
-
-
 
 languageDef = emptyDef{ commentStart = "<"
                       , commentEnd = ">"
@@ -31,11 +27,10 @@ TokenParser{ parens = m_parens
            , reservedOp = m_reservedOp
            , reserved = m_reserved
            , whiteSpace = m_whiteSpace } = makeTokenParser languageDef
-           
-           
+
+         
 exprParser :: Parser Expr
 exprParser = m_parens exprParser
-       -- <|> fmap IdentifierEval m_identifier
         <|> do { number <- m_number
                ; return $ Value $ PoneInteger number
                }
@@ -59,7 +54,6 @@ exprParser = m_parens exprParser
         
        
 globalDefParser :: Parser GlobalDef
-                  --fixme, this usually leads to the whole program being parsed twice
 globalDefParser = try(do { m_reserved "define"
                          ; name <- m_identifier
                          ; params <- try (many m_identifier) <|> return []
@@ -78,7 +72,7 @@ globalDefParser = try(do { m_reserved "define"
                          ; return $ GlobalTypeBind (TypeBind name names)
                          }
 
---typeIdentifier :: Parser String
+typeIdentifier :: Parser String
 typeIdentifier = try $ do { x <- upper
                           ; xs <- many alphaNum
                           ; _ <- m_whiteSpace
@@ -88,13 +82,8 @@ typeIdentifier = try $ do { x <- upper
 
 rodSep1 p = sepBy1 p (m_reserved "|")
     
-
-    
 spaceSep1 p = sepBy1 p m_whiteSpace
-       
-     
--- argParser :: Parser [Expr]
--- argParser = spaceSep1 exprParser
+
      
 programParser :: Parser PoneProgram
 programParser = do { globalDefs <- many globalDefParser
