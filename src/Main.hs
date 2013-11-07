@@ -33,12 +33,7 @@ linesToTest lines = let (x:y:xs) = reverse lines in
 extract :: Show a => (a -> Bool) -> String -> (a -> (Bool, String))
 extract f description = (\x -> (f x, description ++ " got " ++ (show x)))
 
---why does this need io?
-runTest :: PoneTest -> IO TestResult
-runTest (Test filename source description expectedValue) = do
-    result :: Either String Integer <- testSource source
-    return $ fmap (extract ((==) expectedValue) makeString) result
-    where makeString = description ++ ": expected " ++ (show expectedValue)
+
 
     
 printResult :: TestResult -> String
@@ -52,7 +47,7 @@ appendEither msg e = case e of
     Left x -> Left (x `mappend` msg)
     Right x -> e
 
---why does this need io?
+--todo: use monad transformer (ErrorT?)
 testSource :: String -> IO (Either String Integer)
 testSource source = case parsePone source of
     Left error -> return $ Left error
@@ -60,7 +55,14 @@ testSource source = case parsePone source of
         result <- (poneEval ast)
         return $ result
 
-isFile :: FilePath -> Bool
+--why does this need io?
+runTest :: PoneTest -> IO TestResult
+runTest (Test filename source description expectedValue) = do
+    result :: Either String Integer <- testSource source
+    return $ fmap (extract ((==) expectedValue) makeString) result
+    where makeString = description ++ ": expected " ++ (show expectedValue)
+        
+isFile :: String -> Bool
 isFile [] = False
 isFile ('.':[]) = False
 isFile ('.':'.':xs) = False
@@ -72,6 +74,7 @@ combine f s r = (f s) `mappend` r
 trim :: String -> String
 trim s = unpack $ strip $ pack $ s
 
+--todo use writer monad
 main = do
     sources :: [FilePath] <- (liftM . filter) isFile $ liftM reverse $ getDirectoryContents root --return ["test6.pone"]--
     tests :: [PoneTest] <- mapM (loadTest . (root ++))  sources 

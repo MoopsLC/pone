@@ -27,6 +27,7 @@ languageDef = emptyDef{ commentStart = "<"
     
 TokenParser{ parens = m_parens
            , integer = m_number
+           , float = m_float
            , identifier = m_identifier
            , reservedOp = m_reservedOp
            , reserved = m_reserved
@@ -35,6 +36,9 @@ TokenParser{ parens = m_parens
        
 parseInteger :: Parser Expr
 parseInteger = (Value . PoneInteger) <$> m_number
+
+parseFloat :: Parser Expr
+parseFloat = (Value . PoneFloat) <$> m_float
        
 tryParseMany :: Parser a -> Parser [a]
 tryParseMany parser = try (spaceSep1 parser) <|> return []

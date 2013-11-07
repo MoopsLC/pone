@@ -42,25 +42,6 @@ pushType env name type' = types %~ Map.insert name type' $ env
 
 lookupType :: Environment -> String -> Maybe TypeDef
 lookupType env name = Map.lookup name (env ^. types)
-
-tryAny :: IO a -> IO (Either SomeException a)
-tryAny = Control.Exception.try
-
-showException :: Either SomeException a -> Either String a
-showException (Left exc) = Left $ ("Interpreter: " ++) $ show exc
-showException (Right x) = Right x
-
-poneEval :: PoneProgram -> IO (Either RuntimeError Integer)
-poneEval (Program globals expr) = 
-    let env :: Either RuntimeError Environment = foldM bind makeEnv globals
-    in case env of 
-        Left err -> return $ Left err
-        Right e -> do
-            r <- fmap showException $ tryAny $ evaluate $ eval e expr      
-            evaluate $ join $ r
-    
-printInline :: Show a => a -> b -> b
-printInline a b = (trace (show a)) b
     
 bind :: Environment -> GlobalDef -> Either RuntimeError Environment
 bind env def = case def of
@@ -106,4 +87,24 @@ eval env expr = case expr of
                     in eval newEnv expr
                 Nothing -> Left $ "Unbound procedure: " ++ (show other) ++ (show expr)
 
---failFirst :: [Either a b] -> Either a [b]  
+
+
+tryAny :: IO a -> IO (Either SomeException a)
+tryAny = Control.Exception.try
+
+showException :: Either SomeException a -> Either String a
+showException (Left exc) = Left $ ("Interpreter: " ++) $ show exc
+showException (Right x) = Right x
+
+
+poneEval :: PoneProgram -> IO (Either RuntimeError Integer)
+poneEval (Program globals expr) = 
+    let env :: Either RuntimeError Environment = foldM bind makeEnv globals
+    in case env of 
+        Left err -> return $ Left err
+        Right e -> do
+            r <- fmap showException $ tryAny $ evaluate $ eval e expr      
+            evaluate $ join $ r
+    
+printInline :: Show a => a -> b -> b
+printInline a b = (trace (show a)) b

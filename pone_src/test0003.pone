@@ -1,0 +1,10 @@
+define b as
+    define c as
+        define d as
+            define e as 1 in
+        e in
+    d in
+c in
+b
+comment 1
+comment nested defines

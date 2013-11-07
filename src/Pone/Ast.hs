@@ -14,6 +14,7 @@ module Pone.Ast where
                 | <procedure-eval>
                 | <value-ident>
                 | <integer>
+                | <float>
 
     <const-bind> ::= "define" <value-ident> "as" <expr> "in" <expr>
     
@@ -34,6 +35,8 @@ module Pone.Ast where
     <procedure-eval> ::= <itent> (<args> +)
 
     <integer> ::= [0-9]+
+    
+    <float> ::= [0-9]+ "." [0-9]*
 
 -}
 
@@ -50,6 +53,7 @@ data GlobalDef = GlobalProcedureBind ProcedureBind
     deriving Show
 
 data Typed = PoneInteger Integer
+           | PoneFloat Double
     deriving Show
 
 data TypeBind = TypeBind String [TypeIdent]
