@@ -68,7 +68,7 @@ parseLocalBind =
                  <*> (m_reserved "as" *> parseExpr)
                  <*> (m_reserved "in" *> parseExpr)
 
-        
+
 parseDefEval :: Parser Expr
 parseDefEval = 
     makeDefEval <$> m_identifier
@@ -76,10 +76,11 @@ parseDefEval =
     
 parseExpr :: Parser Expr
 parseExpr = m_parens parseExpr
+        <|> try(parseFloat)
         <|> parseInteger
         <|> parseDefEval
         <|> parseLocalBind
-
+        <|> ((Value . UserType) <$> typeIdentifier)
 
 -- (..:) :: (d -> e) -> (a -> b -> c -> d) -> (a -> b -> c -> e)
 -- (..:) = ((.) . (.)) . (.)
@@ -95,9 +96,9 @@ parseTypeBind = (GlobalTypeBind .: TypeBind)
 
 parseFunctionBind :: Parser GlobalDef
 parseFunctionBind = 
-    makeGlobalDefBind  <$> (m_reserved "define" *> m_identifier)
-                       <*> (try (many m_identifier) <|> return [])
-                       <*> (m_reserved "as" *> parseExpr <* m_reserved ";")
+    makeGlobalDefBind <$> (m_reserved "define" *> m_identifier)
+                      <*> (try (many m_identifier) <|> return [])
+                      <*> (m_reserved "as" *> parseExpr <* m_reserved ";")
 
 parseGlobalDef :: Parser GlobalDef
 parseGlobalDef = try(parseFunctionBind)

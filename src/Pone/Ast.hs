@@ -8,13 +8,14 @@ module Pone.Ast where
 
     <global-def> :: = (<type-bind> | <procedure-bind> | <const-bind>) ";"
     
-    <expr>    ::= <local-const-bind>
-                | <local-procedure-bind>
-                | "(" <expr> ")"
-                | <procedure-eval>
-                | <value-ident>
-                | <integer>
-                | <float>
+    <expr> ::= <local-const-bind>
+             | <local-procedure-bind>
+             | "(" <expr> ")"
+             | <procedure-eval>
+             | <value-ident>
+             | <integer>
+             | <float>
+             | <pattern-matching>
 
     <const-bind> ::= "define" <value-ident> "as" <expr> "in" <expr>
     
@@ -37,6 +38,8 @@ module Pone.Ast where
     <integer> ::= [0-9]+
     
     <float> ::= [0-9]+ "." [0-9]*
+    
+    <pattern-matching> ::= "match" <expr> "with" ("|" <type-ident> )+ 
 
 -}
 
@@ -54,7 +57,8 @@ data GlobalDef = GlobalProcedureBind ProcedureBind
 
 data Typed = PoneInteger Integer
            | PoneFloat Double
-    deriving Show
+           | UserType String
+    deriving (Show, Eq)
 
 data TypeBind = TypeBind String [TypeIdent]
     deriving Show

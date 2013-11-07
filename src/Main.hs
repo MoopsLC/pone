@@ -32,9 +32,6 @@ linesToTest lines = let (x:y:xs) = reverse lines in
     
 extract :: Show a => (a -> Bool) -> String -> (a -> (Bool, String))
 extract f description = (\x -> (f x, description ++ " got " ++ (show x)))
-
-
-
     
 printResult :: TestResult -> String
 printResult (Left error) = "Error: " ++ error
@@ -48,7 +45,7 @@ appendEither msg e = case e of
     Right x -> e
 
 --todo: use monad transformer (ErrorT?)
-testSource :: String -> IO (Either String Integer)
+testSource :: String -> IO (Either String Typed)
 testSource source = case parsePone source of
     Left error -> return $ Left error
     Right ast -> do 
@@ -58,8 +55,8 @@ testSource source = case parsePone source of
 --why does this need io?
 runTest :: PoneTest -> IO TestResult
 runTest (Test filename source description expectedValue) = do
-    result :: Either String Integer <- testSource source
-    return $ fmap (extract ((==) expectedValue) makeString) result
+    result :: Either String Typed <- testSource source
+    return $ fmap (extract ((==) (PoneInteger expectedValue)) makeString) result
     where makeString = description ++ ": expected " ++ (show expectedValue)
         
 isFile :: String -> Bool
@@ -76,7 +73,7 @@ trim s = unpack $ strip $ pack $ s
 
 --todo use writer monad
 main = do
-    sources :: [FilePath] <- (liftM . filter) isFile $ liftM reverse $ getDirectoryContents root --return ["test6.pone"]--
+    sources :: [FilePath] <- (liftM . filter) isFile $ liftM reverse $ getDirectoryContents root --return ["test0006.pone"]--
     tests :: [PoneTest] <- mapM (loadTest . (root ++))  sources 
     results :: [TestResult] <- mapM runTest tests
     let testResults :: [String] = map ((++ "\n" ) . printResult) results in

@@ -3,4 +3,4 @@ define b as 2;
 define c d e as 3;
 (c 1 2)
 comment 3
-comment some test
+comment multiple global defines

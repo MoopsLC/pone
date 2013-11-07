@@ -1,4 +1,4 @@
-define b as 1.0 in
+define b as 1.1 in
 toInt b
 comment 1
 comment test builtin toInt
