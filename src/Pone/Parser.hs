@@ -1,6 +1,6 @@
 module Pone.Parser (parsePone) where
 
-import Control.Applicative((<*))
+import Control.Applicative((<*), (*>), (<*>), (<$>))
 import Text.Parsec
 import Text.Parsec.String
 import Text.Parsec.Expr
@@ -9,6 +9,10 @@ import Text.Parsec.Language
 import Debug.Trace
 
 import Pone.Ast
+
+               
+(.:) :: (c -> d) -> (a -> b -> c) -> (a -> b -> d)
+(.:) = ((.) . (.))
 
 languageDef = emptyDef{ commentStart = "<"
                       , commentEnd = ">"
@@ -28,50 +32,74 @@ TokenParser{ parens = m_parens
            , reserved = m_reserved
            , whiteSpace = m_whiteSpace } = makeTokenParser languageDef
 
-         
-exprParser :: Parser Expr
-exprParser = m_parens exprParser
-        <|> do { number <- m_number
-               ; return $ Value $ PoneInteger number
-               }
-        <|> do { name <- m_identifier
-               ; args <- try (spaceSep1 exprParser) <|> return []
-               ; return $ case args of 
-                   [] -> IdentifierEval name
-                   xs -> ProcedureEval name args
-               }
-        <|> do { m_reserved "define"
-               ; name <- m_identifier
-               ; params <- try (many m_identifier) <|> return []
-               ; m_reserved "as"
-               ; value <- exprParser
-               ; m_reserved "in"
-               ; expr <- exprParser
-               ; return $ case params of
-                   [] -> LocalIdentifierBind (IdentifierBind name value) expr
-                   xs -> LocalProcedureBind (ProcedureBind name xs value) expr
-               }
-        
        
-globalDefParser :: Parser GlobalDef
-globalDefParser = try(do { m_reserved "define"
-                         ; name <- m_identifier
-                         ; params <- try (many m_identifier) <|> return []
-                         ; m_reserved "as"
-                         ; value <- exprParser 
-                         ; m_reserved ";"
-                         ; return $ case params of
-                             [] -> GlobalIdentifierBind (IdentifierBind name value)
-                             xs -> GlobalProcedureBind (ProcedureBind name xs value)
-                         })
-                  <|> do { m_reserved "type"
-                         ; name <- typeIdentifier
-                         ; m_reserved "is"
-                         ; names <- rodSep1 typeIdentifier
-                         ; m_reserved ";"
-                         ; return $ GlobalTypeBind (TypeBind name names)
-                         }
+parseInteger :: Parser Expr
+parseInteger = (Value . PoneInteger) <$> m_number
+       
+tryParseMany :: Parser a -> Parser [a]
+tryParseMany parser = try (spaceSep1 parser) <|> return []
 
+makeBindEval :: String -> [String] -> Expr -> Expr -> Expr
+makeBindEval name params value expr = 
+    case params of
+        [] -> LocalIdentifierBind (IdentifierBind name value) expr
+        xs -> LocalProcedureBind (ProcedureBind name xs value) expr
+
+makeDefEval :: String -> [Expr] -> Expr
+makeDefEval name args = 
+    case args of 
+        [] -> IdentifierEval name
+        xs -> ProcedureEval name xs
+        
+makeGlobalDefBind :: String -> [String] -> Expr -> GlobalDef
+makeGlobalDefBind name params value = 
+    case params of
+        [] -> GlobalIdentifierBind (IdentifierBind name value)
+        xs -> GlobalProcedureBind (ProcedureBind name xs value)
+        
+parseLocalBind :: Parser Expr
+parseLocalBind = 
+    makeBindEval <$> (m_reserved "define" *> m_identifier)
+                 <*> (tryParseMany m_identifier)
+                 <*> (m_reserved "as" *> parseExpr)
+                 <*> (m_reserved "in" *> parseExpr)
+
+        
+parseDefEval :: Parser Expr
+parseDefEval = 
+    makeDefEval <$> m_identifier
+                <*> tryParseMany parseExpr
+    
+parseExpr :: Parser Expr
+parseExpr = m_parens parseExpr
+        <|> parseInteger
+        <|> parseDefEval
+        <|> parseLocalBind
+
+
+-- (..:) :: (d -> e) -> (a -> b -> c -> d) -> (a -> b -> c -> e)
+-- (..:) = ((.) . (.)) . (.)
+
+-- (...:) :: (e -> f) -> (a -> b -> c -> d -> e) -> (a -> b -> c -> d -> f)
+-- (...:) = (((.) . (.)) . (.)) . (.)
+
+parseTypeBind :: Parser GlobalDef
+parseTypeBind = (GlobalTypeBind .: TypeBind)
+    <$> (m_reserved "type" *> typeIdentifier) 
+    <*> (m_reserved "is" *> (rodSep1 typeIdentifier) <* m_reserved ";")
+     
+
+parseFunctionBind :: Parser GlobalDef
+parseFunctionBind = 
+    makeGlobalDefBind  <$> (m_reserved "define" *> m_identifier)
+                       <*> (try (many m_identifier) <|> return [])
+                       <*> (m_reserved "as" *> parseExpr <* m_reserved ";")
+
+parseGlobalDef :: Parser GlobalDef
+parseGlobalDef = try(parseFunctionBind)
+             <|> parseTypeBind
+
+                  
 typeIdentifier :: Parser String
 typeIdentifier = try $ do { x <- upper
                           ; xs <- many alphaNum
@@ -83,16 +111,12 @@ typeIdentifier = try $ do { x <- upper
 rodSep1 p = sepBy1 p (m_reserved "|")
     
 spaceSep1 p = sepBy1 p m_whiteSpace
-
      
-programParser :: Parser PoneProgram
-programParser = do { globalDefs <- many globalDefParser
-                   ; expr <- exprParser
-                   ; return $ Program globalDefs expr
-                   }
+parseProgram :: Parser PoneProgram
+parseProgram = Program <$> (many parseGlobalDef) <*> parseExpr
 
-mainParser :: Parser PoneProgram
-mainParser = m_whiteSpace >> programParser <* eof
+parseMain :: Parser PoneProgram
+parseMain = m_whiteSpace *> parseProgram <* eof
 
 convertError :: Either ParseError PoneProgram -> Either String PoneProgram
 convertError (Left err) = Left $ show err
@@ -104,6 +128,6 @@ printAst arg = case arg of
     Right ast -> trace (show ast) arg
 
 parsePone :: String -> Either String PoneProgram
-parsePone src = convertError $ {-printAst $-} parse mainParser "" src
+parsePone src = convertError $ {-printAst $-} parse parseMain "" src
 
 

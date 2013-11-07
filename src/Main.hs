@@ -33,6 +33,7 @@ linesToTest lines = let (x:y:xs) = reverse lines in
 extract :: Show a => (a -> Bool) -> String -> (a -> (Bool, String))
 extract f description = (\x -> (f x, description ++ " got " ++ (show x)))
 
+--why does this need io?
 runTest :: PoneTest -> IO TestResult
 runTest (Test filename source description expectedValue) = do
     result :: Either String Integer <- testSource source
@@ -51,6 +52,7 @@ appendEither msg e = case e of
     Left x -> Left (x `mappend` msg)
     Right x -> e
 
+--why does this need io?
 testSource :: String -> IO (Either String Integer)
 testSource source = case parsePone source of
     Left error -> return $ Left error
