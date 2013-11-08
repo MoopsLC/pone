@@ -18,7 +18,7 @@ type RuntimeError = String
       
 data ProcedureDef = ProcedureDef String [String] Expr deriving Show
 data TypeDef = TypeDef String [String] deriving Show
-data Environment = Environment { _names :: Map.Map String Typed
+data Environment = Environment { _names :: Map.Map String Var
                                , _procs :: Map.Map String ProcedureDef
                                , _types :: Map.Map String TypeDef
                                } deriving Show
@@ -33,10 +33,10 @@ pushProc env name def = procs %~ Map.insert name def $ env
 lookupProc :: Environment -> String -> Maybe ProcedureDef
 lookupProc env name = Map.lookup name (env ^. procs)
 
-pushName :: Environment -> String -> Typed -> Environment
+pushName :: Environment -> String -> Var -> Environment
 pushName env name value = names %~ Map.insert name value $ env
 
-lookupName :: Environment -> String -> Maybe Typed
+lookupName :: Environment -> String -> Maybe Var
 lookupName env name = Map.lookup name (env ^. names)
 
 pushType :: Environment -> String -> TypeDef -> Environment
@@ -54,28 +54,28 @@ bind env def = case def of
         return $ pushName env name evaluated
     GlobalTypeBind (TypeBind name ctors) -> return env
 
-envMultiBind :: Environment -> [(String, Typed)] -> Environment
+envMultiBind :: Environment -> [(String, Var)] -> Environment
 envMultiBind env [] = env
-envMultiBind env ((param, value):xs) = envMultiBind (pushName env param value) xs
+envMultiBind env ((p, v):xs) = envMultiBind (pushName env p v) xs
 
 extractExpr :: Pattern -> Expr
 extractExpr (Pattern _ expr) = expr
     
-extractLit :: Pattern -> Typed
+extractLit :: Pattern -> Var
 extractLit (Pattern lit _) = lit
     
-findLit :: Typed -> (Pattern -> Bool)
+findLit :: Var -> (Pattern -> Bool)
 findLit l pattern = let lit = extractLit pattern in lit == l
     
-matchPattern :: Typed -> [Pattern] -> Maybe Expr
+matchPattern :: Var -> [Pattern] -> Maybe Expr
 matchPattern lit patterns = fmap extractExpr maybeFound
     where maybeFound :: Maybe Pattern
           maybeFound = (find (findLit lit) patterns)
           
-eval :: Environment -> Expr -> Either RuntimeError Typed
+eval :: Environment -> Expr -> Either RuntimeError Var
 eval env expr = case expr of
     PatternMatch expr patterns -> do
-        value :: Typed <- eval env expr
+        value :: Var <- eval env expr
         case matchPattern value patterns of
             Just match -> do 
                 matchValue <- eval env match
@@ -87,8 +87,8 @@ eval env expr = case expr of
     LocalIdentifierBind (IdentifierBind name v) e -> do
         value <- eval env v
         let newEnv = (pushName env name value) in eval newEnv e
-        
-    LocalProcedureBind (ProcedureBind name args value) expr ->  --make sure no repeat args
+    --make sure no repeat args
+    LocalProcedureBind (ProcedureBind name args value) expr ->  
         let newEnv = pushProc env name (ProcedureDef name args value) in 
         eval newEnv expr
         
@@ -108,11 +108,11 @@ eval env expr = case expr of
                           PoneFloat f -> return $ PoneInteger $ truncate f 
                           UserType _ -> Left ("type error")
         other -> do
-            -- [Either String Typed] -> Either String [Typed]
-            evaluated :: [Typed] <- sequence $ map (eval env) args-- :: [Either String Typed]
+            -- [Either String Var] -> Either String [Var]
+            evaluated :: [Var] <- sequence $ map (eval env) args-- :: [Either String Var]
             case lookupProc env other of 
                 Just (ProcedureDef other params expr) ->
-                    let zipped :: [(String, Typed)] = zip params evaluated -- make sure same length
+                    let zipped :: [(String, Var)] = zip params evaluated -- make sure same length
                         newEnv :: Environment = envMultiBind env zipped 
                     in eval newEnv expr
                 Nothing -> Left $ "Unbound procedure: " ++ (show other) ++ (show expr)
@@ -126,7 +126,7 @@ showException :: Either SomeException a -> Either String a
 showException (Left exc) = Left $ ("Interpreter: " ++) $ show exc
 showException (Right x) = Right x
 
-poneEval :: PoneProgram -> IO (Either RuntimeError Typed)
+poneEval :: PoneProgram -> IO (Either RuntimeError Var)
 poneEval (Program globals expr) = 
     let env :: Either RuntimeError Environment = foldM bind makeEnv globals
     in case env of 

@@ -48,6 +48,8 @@ module Pone.Ast where
 
 type TypeIdent = String
 
+
+
 data PoneProgram = Program [GlobalDef] Expr
     deriving Show
     
@@ -57,9 +59,9 @@ data GlobalDef = GlobalProcedureBind ProcedureBind
                
     deriving Show
 
-data Typed = PoneInteger Integer
-           | PoneFloat Double
-           | UserType String
+data Var = PoneInteger Integer
+         | PoneFloat Double
+         | UserType String
     deriving (Show, Eq)
 
 data TypeBind = TypeBind String [TypeIdent]
@@ -71,13 +73,13 @@ data ProcedureBind = ProcedureBind String [String] Expr
 data IdentifierBind = IdentifierBind String Expr
     deriving Show
    
-data Pattern = Pattern Typed Expr
+data Pattern = Pattern Var Expr
     deriving Show
    
-data Expr = Value Typed
+data Expr = Value Var
           | LocalIdentifierBind IdentifierBind Expr 
           | IdentifierEval String
-          | LocalProcedureBind ProcedureBind Expr
+          | LocalProcedureBind ProcedureBind Expr 
           | ProcedureEval String [Expr]
           | PatternMatch Expr [Pattern]
     deriving Show

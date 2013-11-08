@@ -3,7 +3,6 @@ module Pone.Parser (parsePone) where
 import Control.Applicative((<*), (*>), (<*>), (<$>))
 import Text.Parsec
 import Text.Parsec.String
-import Text.Parsec.Expr
 import Text.Parsec.Token
 import Text.Parsec.Language
 import Debug.Trace
@@ -14,7 +13,7 @@ import Pone.Ast
 (.:) :: (c -> d) -> (a -> b -> c) -> (a -> b -> d)
 (.:) = ((.) . (.))
 
-languageDef = emptyDef{ commentStart = "<"
+languageDef = emptyDef{ commentStart = "<"  
                       , commentEnd = ">"
                       , commentLine = "comment"
                       , identStart = lower
@@ -24,7 +23,7 @@ languageDef = emptyDef{ commentStart = "<"
                       }
     
     
-    
+     
 TokenParser{ parens = m_parens
            , integer = m_number
            , float = m_float

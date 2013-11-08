@@ -7,7 +7,6 @@ import Data.Text (unpack, strip, pack)
 import Data.Tuple.HT (uncurry3)
 import qualified Data.Map as Map
 
-
 import Pone.Parser
 import Pone.Interpreter
 import Pone.Ast
@@ -45,21 +44,20 @@ appendEither msg e = case e of
     Right x -> e
 
 --todo: use monad transformer (ErrorT?)
-testSource :: String -> IO (Either String Typed)
+testSource :: String -> IO (Either String Var)
 testSource source = case parsePone source of
     Left error -> return $ Left error
     Right ast -> do 
         result <- (poneEval ast)
         return $ result
 
---why does this need io?
 runTest :: PoneTest -> IO TestResult
 runTest (Test filename source description expectedValue) = do
-    result :: Either String Typed <- testSource source
+    result :: Either String Var <- testSource source
     return $ fmap (extract ((==) (PoneInteger expectedValue)) makeString) result
     where makeString = description ++ ": expected " ++ (show expectedValue)
         
-isFile :: String -> Bool
+isFile :: String -> Bool 
 isFile [] = False
 isFile ('.':[]) = False
 isFile ('.':'.':xs) = False
