@@ -19,7 +19,7 @@ languageDef = emptyDef{ commentStart = "<"
                       , commentLine = "comment"
                       , identStart = lower
                       , identLetter = alphaNum
-                      , reservedNames = ["define", "as", "in", ";", "|"]
+                      , reservedNames = ["define", "as", "in", ";", "|", "->"]
                       , caseSensitive = True
                       }
     
@@ -74,13 +74,26 @@ parseDefEval =
     makeDefEval <$> m_identifier
                 <*> tryParseMany parseExpr
     
+parsePatternMatch :: Parser Expr
+parsePatternMatch = 
+    PatternMatch <$> (m_reserved "match" *> parseExpr)
+                 <*> (m_reserved "with" *> m_parens (many parsePattern))
+                 
+parsePattern :: Parser Pattern
+parsePattern = 
+    Pattern <$> (m_reserved "|" *> (UserType <$> typeIdentifier))
+            <*> (m_reserved "->" *> parseExpr)
+    
 parseExpr :: Parser Expr
 parseExpr = m_parens parseExpr
+        <|> parsePatternMatch
         <|> try(parseFloat)
         <|> parseInteger
         <|> parseDefEval
         <|> parseLocalBind
         <|> ((Value . UserType) <$> typeIdentifier)
+        
+        
 
 -- (..:) :: (d -> e) -> (a -> b -> c -> d) -> (a -> b -> c -> e)
 -- (..:) = ((.) . (.)) . (.)

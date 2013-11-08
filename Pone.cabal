@@ -20,4 +20,4 @@ executable Pone
   build-depends:       base ==4.6.*, parsec ==3.1.*, containers ==0.5.*, utility-ht, lens, directory, text, mtl
   hs-source-dirs:      src
   extensions:          ScopedTypeVariables, FlexibleInstances, NoMonomorphismRestriction,BangPatterns 
-  ghc-options:         -O0
+  ghc-options:         -O0 -Werror -fwarn-incomplete-patterns

@@ -4,6 +4,7 @@ import qualified Data.Map as Map
 
 import Debug.Trace
 import Data.Monoid
+import Data.List (find)
 import Control.Lens
 import Control.Exception
 import Control.Monad
@@ -57,13 +58,35 @@ envMultiBind :: Environment -> [(String, Typed)] -> Environment
 envMultiBind env [] = env
 envMultiBind env ((param, value):xs) = envMultiBind (pushName env param value) xs
 
+extractExpr :: Pattern -> Expr
+extractExpr (Pattern _ expr) = expr
+    
+extractLit :: Pattern -> Typed
+extractLit (Pattern lit _) = lit
+    
+findLit :: Typed -> (Pattern -> Bool)
+findLit l pattern = let lit = extractLit pattern in lit == l
+    
+matchPattern :: Typed -> [Pattern] -> Maybe Expr
+matchPattern lit patterns = fmap extractExpr maybeFound
+    where maybeFound :: Maybe Pattern
+          maybeFound = (find (findLit lit) patterns)
+          
 eval :: Environment -> Expr -> Either RuntimeError Typed
 eval env expr = case expr of
+    PatternMatch expr patterns -> do
+        value :: Typed <- eval env expr
+        case matchPattern value patterns of
+            Just match -> do 
+                matchValue <- eval env match
+                return matchValue
+            Nothing -> Left ("failed to match pattern " ++ (show expr))
+            
+        
     Value literal -> return literal               
     LocalIdentifierBind (IdentifierBind name v) e -> do
         value <- eval env v
         let newEnv = (pushName env name value) in eval newEnv e
-        
         
     LocalProcedureBind (ProcedureBind name args value) expr ->  --make sure no repeat args
         let newEnv = pushProc env name (ProcedureDef name args value) in 
@@ -83,6 +106,7 @@ eval env expr = case expr of
                       case float of 
                           PoneInteger i -> Left ("type error")
                           PoneFloat f -> return $ PoneInteger $ truncate f 
+                          UserType _ -> Left ("type error")
         other -> do
             -- [Either String Typed] -> Either String [Typed]
             evaluated :: [Typed] <- sequence $ map (eval env) args-- :: [Either String Typed]

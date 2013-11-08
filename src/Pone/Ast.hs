@@ -39,7 +39,9 @@ module Pone.Ast where
     
     <float> ::= [0-9]+ "." [0-9]*
     
-    <pattern-matching> ::= "match" <expr> "with" ("|" <type-ident> )+ 
+    <pattern-matching> ::= "match" <expr> "with" "(" (<pattern-bind>)+ ")"
+    
+    <pattern-bind> ::= "|" <type-ident> "->" <expr>
 
 -}
 
@@ -69,11 +71,15 @@ data ProcedureBind = ProcedureBind String [String] Expr
 data IdentifierBind = IdentifierBind String Expr
     deriving Show
    
+data Pattern = Pattern Typed Expr
+    deriving Show
+   
 data Expr = Value Typed
           | LocalIdentifierBind IdentifierBind Expr 
           | IdentifierEval String
           | LocalProcedureBind ProcedureBind Expr
           | ProcedureEval String [Expr]
+          | PatternMatch Expr [Pattern]
     deriving Show
     
     
