@@ -13,6 +13,7 @@ import Pone.Ast
 
 import Debug.Trace
 import System.Directory
+import System.Timeout
     
 data PoneTest = Test String String String Integer
 type TestResult = Either String (Bool, String)
@@ -54,7 +55,7 @@ testSource source = case parsePone source of
 runTest :: PoneTest -> IO TestResult
 runTest (Test filename source description expectedValue) = do
     result :: Either String Var <- testSource source
-    return $ Right (False, "fixme")--fmap (extract ((==) (PoneInteger expectedValue)) makeString) result
+    return $ fmap (extract ((==) (PoneInteger expectedValue)) makeString) result
     where makeString = description ++ ": expected " ++ (show expectedValue)
         
 isFile :: String -> Bool 
@@ -69,18 +70,22 @@ combine f s r = (f s) `mappend` r
 trim :: String -> String
 trim s = unpack $ strip $ pack $ s
 
---todo use writer monad
-main = do
+
+root = "C:/Users/M/Desktop/pone/pone_src/"
+
+runOne :: String -> IO TestResult
+runOne name = do 
     test <- loadTest "C:/Users/M/Desktop/pone/pone_src/test0015.pone"
     case test of 
         Test _ source _ _ -> case parsePone source of
             Left err -> putStrLn err
             Right err -> print $ err
-    putStrLn "test"
     runTest test
-    --sources :: [FilePath] <- (liftM . filter) isFile $ liftM reverse $ return ["test0006.pone"]--getDirectoryContents root --
-    --tests :: [PoneTest] <- mapM (loadTest . (root ++))  sources 
-    --results :: [TestResult] <- mapM runTest tests
-    --let testResults :: [String] = map ((++ "\n" ) . printResult) results in
-    --    putStrLn $ trim $ unlines $ map ((uncurry . combine) (++ "\n")) $ zip sources testResults
-    --where root = "C:/Users/M/Desktop/pone/pone_src/"
+--todo use writer monad
+main = do
+    sources :: [FilePath] <- (liftM . filter) isFile $ liftM reverse $ return ["test0005.pone"]--getDirectoryContents root --
+    tests :: [PoneTest] <- mapM (loadTest . (root ++))  sources 
+    results :: [TestResult] <- mapM runTest tests
+    let testResults :: [String] = map ((++ "\n" ) . printResult) results in
+        putStrLn $ trim $ unlines $ map ((uncurry . combine) (++ "\n")) $ zip sources testResults
+    where 

@@ -53,24 +53,24 @@ type TypeIdent = String
 
 
 data PoneProgram = Program [GlobalDef] Expr
-    deriving Show
+    deriving (Show, Eq)
     
 data GlobalDef = GlobalIdentifierBind IdentifierBind
                | GlobalTypeBind TypeBind
                
-    deriving Show
+    deriving (Show, Eq)
 
 data TypeBind = TypeBind String [TypeIdent]
-    deriving Show
+    deriving (Show, Eq)
     
 data Lambda = Lambda String Expr
-    deriving Show
+    deriving (Show, Eq)
 
 data IdentifierBind = IdentifierBind String Expr
-    deriving Show
+    deriving (Show, Eq)
    
 data Pattern = Pattern Var Expr
-    deriving Show
+    deriving (Show, Eq)
 
 
 data Var = PoneInteger Integer
@@ -78,13 +78,13 @@ data Var = PoneInteger Integer
          | UserType String
          | Lam Lambda
          | Identifier String
-    deriving Show
+    deriving (Show, Eq)
 
 --an expression to be evaluated
 data Expr = LocalIdentifierBind IdentifierBind Expr 
           | Apply !Expr !Expr --bind first Expr to the name String in Expr
           | PatternMatch Expr [Pattern]
           | Value Var
-    deriving Show
+    deriving (Show, Eq)
     
     

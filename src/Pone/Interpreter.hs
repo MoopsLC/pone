@@ -57,7 +57,7 @@ extractLit :: Pattern -> Var
 extractLit (Pattern lit _) = lit
     
 findLit :: Var -> (Pattern -> Bool)
-findLit l pattern = let lit = extractLit pattern in True--fixme, just check the types lit == l
+findLit l pattern = let lit = extractLit pattern in lit == l
     
 matchPattern :: Var -> [Pattern] -> Maybe Expr
 matchPattern lit patterns = fmap extractExpr maybeFound
@@ -74,8 +74,15 @@ eval env expr = case expr of
                 return matchValue
             Nothing -> Left ("failed to match pattern " ++ (show expr))
             
-        
-    Value literal -> return literal
+
+    Value literal -> case literal of
+        Identifier ident -> do 
+            case lookupName env ident of 
+                Just match ->
+                    eval env  match
+                Nothing -> Left ("unbound name " ++ (show ident))
+            
+        _ -> return literal
     LocalIdentifierBind (IdentifierBind name v) e -> do
         value <- eval env v
         let newEnv = (pushName env name (Value value)) in 
@@ -142,5 +149,3 @@ poneEval (Program globals expr) =
             r <- fmap showException $ tryAny $ evaluate $ eval e expr      
             evaluate $ join $ r
     
-printInline :: Show a => a -> b -> b
-printInline a b = (trace (show a)) b

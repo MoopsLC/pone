@@ -36,137 +36,118 @@ TokenParser{ parens = m_parens
 parseInteger :: Parser Var
 parseInteger = PoneInteger <$> m_number
 
---parseFloat :: Parser Var
---parseFloat = PoneFloat <$> m_float
+parseFloat :: Parser Var
+parseFloat = PoneFloat <$> m_float
        
---tryParseMany :: Parser a -> Parser [a]
---tryParseMany parser = try (spaceSep1 parser) <|> return []
+tryParseMany :: Parser a -> Parser [a]
+tryParseMany parser = try (spaceSep1 parser) <|> return []
 
---makeBindEval :: String -> [String] -> Expr -> Expr -> Expr
---makeBindEval name params value expr = 
---    case params of
---        [] -> LocalIdentifierBind (IdentifierBind name value) expr
---        xs -> LocalIdentifierBind (IdentifierBind name (defToLambda (name:xs) value)) expr
+makeBindEval :: String -> [String] -> Expr -> Expr -> Expr
+makeBindEval name params value expr = 
+    case params of
+        [] -> LocalIdentifierBind (IdentifierBind name value) expr
+        xs -> LocalIdentifierBind (IdentifierBind name (defToLambda xs value)) expr--CODE CLONE 1
 
-----makeDefEval :: String -> [Expr] -> Expr
-----makeDefEval name args = 
-----    case args of 
-----        [] -> IdentifierEval name
-----        xs -> ProcedureEval name xs
+--makeDefEval :: String -> [Expr] -> Expr
+--makeDefEval name args = 
+--    case args of 
+--        [] -> IdentifierEval name
+--        xs -> ProcedureEval name xs
         
---makeGlobalDefBind :: String -> [String] -> Expr -> GlobalDef
---makeGlobalDefBind name params value = 
---    case params of
---        [] -> GlobalIdentifierBind (IdentifierBind name value)
---        xs -> GlobalIdentifierBind (IdentifierBind name (defToLambda (name:xs) value))
+makeGlobalDefBind :: String -> [String] -> Expr -> GlobalDef
+makeGlobalDefBind name params value = 
+    case params of
+        [] -> GlobalIdentifierBind (IdentifierBind name value)
+        xs -> GlobalIdentifierBind (IdentifierBind name (defToLambda xs value))--CODE CLONE 1
         
---defToLambda :: [String] -> Expr -> Expr
---defToLambda names expr = foldr (\x acc -> Value $ Lam $ Lambda x acc) expr names
+defToLambda :: [String] -> Expr -> Expr
+defToLambda names expr = foldr (\x acc -> Value $ Lam $ Lambda x acc) expr names
 
---parseLocalBind :: Parser Expr
---parseLocalBind = 
---    makeBindEval <$> (m_reserved "define" *> m_identifier)
---                 <*> (tryParseMany m_identifier)
---                 <*> (m_reserved "as" *> parseExpr)
---                 <*> (m_reserved "in" *> parseExpr)
+parseLocalBind :: Parser Expr
+parseLocalBind = 
+    makeBindEval <$> (m_reserved "define" *> m_identifier)
+                 <*> (tryParseMany m_identifier)
+                 <*> (m_reserved "as" *> parseExpr)
+                 <*> (m_reserved "in" *> parseExpr)
     
---parseLambda :: Parser Var
---parseLambda = 
---    (Lam .: Lambda) <$> (m_identifier <* m_reserved "->")
---                    <*> parseExpr
+parseLambda :: Parser Var
+parseLambda = 
+    (Lam .: Lambda) <$> (m_identifier <* m_reserved "->")
+                    <*> parseExpr
 
---printInline :: Show a => a -> b -> b
---printInline a b = (trace (show a)) b
-
---parseApply :: Parser Expr
---parseApply = 
---    Apply <$> parseExprNoApply <*> parseExpr
-
---parsePatternMatch :: Parser Expr
---parsePatternMatch = 
---    PatternMatch <$> (m_reserved "match" *> parseExpr)
---                 <*> (m_reserved "with" *> m_parens (many parsePattern))
+parsePatternMatch :: Parser Expr
+parsePatternMatch = 
+    PatternMatch <$> (m_reserved "match" *> parseExpr)
+                 <*> (m_reserved "with" *> m_parens (many parsePattern))
                  
---parsePattern :: Parser Pattern
---parsePattern = 
---    Pattern <$> (m_reserved "|" *> (UserType <$> typeIdentifier))
---            <*> (m_reserved "->" *> parseExpr)
+parsePattern :: Parser Pattern
+parsePattern = 
+    Pattern <$> (m_reserved "|" *> (UserType <$> typeIdentifier))
+            <*> (m_reserved "->" *> parseExpr)
     
---parseVar :: Parser Var
---parseVar = (UserType <$> typeIdentifier)
---       <|> parseInteger
---       <|> try(parseFloat)
---       <|> (Identifier <$> m_identifier)
+parseVar :: Parser Var
+parseVar = (UserType <$> typeIdentifier)
+       <|> parseInteger
+       <|> try(parseFloat)
+       <|> (Identifier <$> m_identifier)
 
---parseExprNoApply :: Parser Expr
---parseExprNoApply = (Value <$> parseVar)
---              -- <|> parsePatternMatch
---               <|> parseLocalBind
---               <|> m_parens parseExpr
+parseExprNoApply :: Parser Expr
+parseExprNoApply = (Value <$> parseVar)
+               <|> parsePatternMatch
+               <|> parseLocalBind
+               <|> m_parens parseExpr
         
         
---parseExpr :: Parser Expr
---parseExpr = try(parseApply) <|> parseExpr
+parseExpr :: Parser Expr
+parseExpr = try(parseApply) <|> parseExpr
 
----- (..:) :: (d -> e) -> (a -> b -> c -> d) -> (a -> b -> c -> e)
----- (..:) = ((.) . (.)) . (.)
-
----- (...:) :: (e -> f) -> (a -> b -> c -> d -> e) -> (a -> b -> c -> d -> f)
----- (...:) = (((.) . (.)) . (.)) . (.)
-
---parseTypeBind :: Parser GlobalDef
---parseTypeBind = (GlobalTypeBind .: TypeBind)
---    <$> (m_reserved "type" *> typeIdentifier) 
---    <*> (m_reserved "is" *> (rodSep1 typeIdentifier) <* m_reserved ";")
+parseTypeBind :: Parser GlobalDef
+parseTypeBind = (GlobalTypeBind .: TypeBind)
+    <$> (m_reserved "type" *> typeIdentifier) 
+    <*> (m_reserved "is" *> (rodSep1 typeIdentifier) <* m_reserved ";")
      
 
---parseFunctionBind :: Parser GlobalDef
---parseFunctionBind = 
---    makeGlobalDefBind <$> (m_reserved "define" *> m_identifier)
---                      <*> (try (many m_identifier) <|> return [])
---                      <*> (m_reserved "as" *> parseExpr <* m_reserved ";")
+parseFunctionBind :: Parser GlobalDef
+parseFunctionBind = 
+    makeGlobalDefBind <$> (m_reserved "define" *> m_identifier)
+                      <*> (try (many m_identifier) <|> return [])
+                      <*> (m_reserved "as" *> parseExpr <* m_reserved ";")
 
---parseGlobalDef :: Parser GlobalDef
---parseGlobalDef = try(parseFunctionBind)
---             <|> parseTypeBind
+parseGlobalDef :: Parser GlobalDef
+parseGlobalDef = try(parseFunctionBind)
+             <|> parseTypeBind
 
                   
---typeIdentifier :: Parser String
---typeIdentifier = try $ do { x <- upper
---                          ; xs <- many alphaNum
---                          ; _ <- m_whiteSpace
---                          ; return (x:xs)
---                          }
+typeIdentifier :: Parser String
+typeIdentifier = try $ do { x <- upper
+                          ; xs <- many alphaNum
+                          ; _ <- m_whiteSpace
+                          ; return (x:xs)
+                          }
 
 
---rodSep1 p = sepBy1 p (m_reserved "|")
+rodSep1 p = sepBy1 p (m_reserved "|")
     
---spaceSep1 p = sepBy1 p m_whiteSpace
+spaceSep1 p = sepBy1 p m_whiteSpace
      
---parseProgram :: Parser PoneProgram
---parseProgram = Program <$> (many parseGlobalDef) <*> parseExpr
+parseProgram :: Parser PoneProgram
+parseProgram = Program <$> (many parseGlobalDef) <*> parseExpr
 
---parse into expr list then turn into applies later
+data ApplyList = ApplyList [Expr]
 
-makeProgram :: Expr -> PoneProgram
-makeProgram expr = Program [] expr
+listToApply :: ApplyList -> Expr
+listToApply (ApplyList xs) = foldl1 Apply xs
 
-newParseProgram :: Parser PoneProgram
-newParseProgram = makeProgram <$> newParseExpr
+parseApply :: Parser Expr
+parseApply = (listToApply . ApplyList) <$> do { first <- parseExprNoApply
+                                              ; rest <- many parseExprNoApply
+                                              ; return $ (first:rest)
+                                              }
 
 
-newParseNoApply :: Parser Expr
-newParseNoApply = ((Value . PoneInteger) <$> m_number)
-
-newParseApply :: Parser Expr
-newParseApply = Apply <$> newParseNoApply <*> newParseNoApply
-
-newParseExpr :: Parser Expr
-newParseExpr = try(newParseApply)
-           <|> newParseNoApply
 
 parseMain :: Parser PoneProgram
-parseMain = m_whiteSpace *> newParseProgram <* eof
+parseMain = m_whiteSpace *> parseProgram <* eof
 
 convertError :: Either ParseError PoneProgram -> Either String PoneProgram
 convertError (Left err) = Left $ show err
