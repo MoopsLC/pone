@@ -23,16 +23,33 @@ data Environment = Environment { _names :: Map.Map String Expr
                                , _types :: Map.Map String TypeDef
                                } deriving Show
 
-makeBuiltins :: Map.Map String Expr
-makeBuiltins = Map.insert "toInt" (Value $ Builtin "toInt" toInt) Map.empty 
+builtins = [ ("toInt", toInt)
+           , ("add", add)
+           ]
 
-toInt :: Expr -> Expr
-toInt e = case e of 
-    Value (PoneFloat f) -> Value $ PoneInteger $ truncate f
-    _ -> undefined
+makeBuiltins :: Map.Map String Expr
+makeBuiltins = foldl (\acc (k,v) -> Map.insert k v acc) Map.empty builtins
+
+toInt :: Expr
+toInt = Value $ Builtin "toInt" func
+    where func :: Expr -> Expr
+          func e = case e of
+              Value (PoneFloat f) -> Value $ PoneInteger $ truncate f
+              _ -> undefined 
+
 makeLambda :: String -> Expr -> Expr
 makeLambda name expr = (Value $ Lam $ Lambda name expr)
 
+doAdd :: Expr -> Expr -> Expr
+doAdd expr1 expr2 = case (expr1, expr2) of 
+        (Value (PoneInteger i), Value (PoneInteger j)) -> Value $ PoneInteger (i + j)
+        _ -> undefined
+
+add :: Expr
+add = Value $ Builtin "add" (\expr1 -> Value $ Builtin "addexpr" (\expr2 -> doAdd expr1 expr2))
+
+--add :: Lambda
+--add = makeLambda "add"
 
 makeEnv = Environment makeBuiltins Map.empty
 

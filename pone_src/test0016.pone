@@ -1,0 +1,4 @@
+define add3 as (add 3) in
+(add3 1)
+comment 4
+comment partial builtin application

@@ -1,8 +1,7 @@
 define arb a as 
     (define doubleSum c b as 
-        (add (add c c) 
-             (add b b)) in 
-    (doubleSum))
+        (add b b) in 
+    (doubleSum a a))
 in
 (arb 1)
 comment 1
