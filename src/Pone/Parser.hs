@@ -87,19 +87,31 @@ parsePattern =
     
 parseVar :: Parser Var
 parseVar = (UserType <$> typeIdentifier)
-       <|> parseInteger
        <|> try(parseFloat)
+       <|> parseInteger
+       <|> try(parseLambda)
        <|> (Identifier <$> m_identifier)
 
 parseExprNoApply :: Parser Expr
-parseExprNoApply = (Value <$> parseVar)
-               <|> parsePatternMatch
+parseExprNoApply = parsePatternMatch
+               <|> (Value <$> parseVar)
                <|> parseLocalBind
                <|> m_parens parseExpr
         
-        
+data ApplyList = ApplyList [Expr]
+
+listToApply :: ApplyList -> Expr
+listToApply (ApplyList xs) = foldl1 Apply xs
+
+parseApply :: Parser Expr
+parseApply = (listToApply . ApplyList) <$> do { first <- parseExprNoApply
+                                              ; second <- parseExprNoApply
+                                              ; rest <- many parseExprNoApply
+                                              ; return $ (first:second:rest)
+                                              }
+
 parseExpr :: Parser Expr
-parseExpr = try(parseApply) <|> parseExpr
+parseExpr = try(parseApply) <|> parseExprNoApply
 
 parseTypeBind :: Parser GlobalDef
 parseTypeBind = (GlobalTypeBind .: TypeBind)
@@ -133,19 +145,6 @@ spaceSep1 p = sepBy1 p m_whiteSpace
 parseProgram :: Parser PoneProgram
 parseProgram = Program <$> (many parseGlobalDef) <*> parseExpr
 
-data ApplyList = ApplyList [Expr]
-
-listToApply :: ApplyList -> Expr
-listToApply (ApplyList xs) = foldl1 Apply xs
-
-parseApply :: Parser Expr
-parseApply = (listToApply . ApplyList) <$> do { first <- parseExprNoApply
-                                              ; rest <- many parseExprNoApply
-                                              ; return $ (first:rest)
-                                              }
-
-
-
 parseMain :: Parser PoneProgram
 parseMain = m_whiteSpace *> parseProgram <* eof
 
@@ -159,6 +158,6 @@ printAst arg = case arg of
     Right ast -> trace (show ast) arg
 
 parsePone :: String -> Either String PoneProgram
-parsePone src = convertError $ printAst $ parse parseMain "" src
+parsePone src = convertError $ {-printAst $-} parse parseMain "" src
 
 

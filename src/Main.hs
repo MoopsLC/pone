@@ -4,6 +4,7 @@ import Control.Monad
 import Data.Monoid
 import Data.Functor
 import Data.Text (unpack, strip, pack)
+import Text.Printf (printf)
 import Data.Tuple.HT (uncurry3)
 import qualified Data.Map as Map
 
@@ -52,9 +53,17 @@ testSource source = case parsePone source of
         result <- (poneEval ast)
         return $ result
 
+--monad transformer -> Maybe o Either String
+tryWithTimeout :: String -> Int -> IO (Either String a) -> IO (Either String a)
+tryWithTimeout msg s proc = do
+    result <- timeout (s*1000000) proc
+    case result of
+        Just value -> return $ value
+        Nothing -> return $ Left msg
+
 runTest :: PoneTest -> IO TestResult
 runTest (Test filename source description expectedValue) = do
-    result :: Either String Var <- testSource source
+    result :: Either String Var <- tryWithTimeout "Interpreter timeout" 3 (testSource source)
     return $ fmap (extract ((==) (PoneInteger expectedValue)) makeString) result
     where makeString = description ++ ": expected " ++ (show expectedValue)
         
@@ -73,19 +82,29 @@ trim s = unpack $ strip $ pack $ s
 
 root = "C:/Users/M/Desktop/pone/pone_src/"
 
-runOne :: String -> IO TestResult
-runOne name = do 
-    test <- loadTest "C:/Users/M/Desktop/pone/pone_src/test0015.pone"
-    case test of 
-        Test _ source _ _ -> case parsePone source of
-            Left err -> putStrLn err
-            Right err -> print $ err
-    runTest test
+runOne :: Int -> IO ()
+runOne num = 
+    let zeros = (if (num < 10) then "000" else "00") in do 
+        print num
+        test <- loadTest ( root ++ "test" ++ zeros ++ (show num) ++ ".pone")
+        case test of 
+            Test _ source _ _ -> case parsePone source of
+                Left err -> putStrLn err
+                Right err -> print $ err
+        join $ liftM (print . printResult) (runTest test)
+
+
 --todo use writer monad
-main = do
-    sources :: [FilePath] <- (liftM . filter) isFile $ liftM reverse $ return ["test0005.pone"]--getDirectoryContents root --
+runAll :: IO ()
+runAll = do
+    sources :: [FilePath] <- (liftM . filter) isFile $ liftM reverse $ getDirectoryContents root
     tests :: [PoneTest] <- mapM (loadTest . (root ++))  sources 
     results :: [TestResult] <- mapM runTest tests
     let testResults :: [String] = map ((++ "\n" ) . printResult) results in
         putStrLn $ trim $ unlines $ map ((uncurry . combine) (++ "\n")) $ zip sources testResults
-    where 
+
+doRunOne = False
+main = do
+    if doRunOne
+        then runOne 11
+        else runAll

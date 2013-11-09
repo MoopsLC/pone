@@ -1,7 +1,9 @@
-define f a b as (a);
 define arb a as 
-    (define doubleSum a b as (a) in (doubleSum a)) 
+    (define doubleSum c b as 
+        (add (add c c) 
+             (add b b)) in 
+    (doubleSum))
 in
 (arb 1)
 comment 1
-comment nested define
+comment complex nested define

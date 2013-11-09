@@ -12,7 +12,8 @@ import Control.Monad
 --import System.IO.Unsafe
 
 import Pone.Ast
-import Pone.Parser    
+import Pone.Parser   
+import Pone.Utils 
       
 type RuntimeError = String
       
@@ -22,8 +23,21 @@ data Environment = Environment { _names :: Map.Map String Expr
                                , _types :: Map.Map String TypeDef
                                } deriving Show
 
-makeEnv = Environment Map.empty Map.empty
-            
+makeBuiltins :: Map.Map String Expr
+makeBuiltins = Map.insert "toInt" (Value $ Builtin "toInt" toInt) Map.empty 
+
+toInt :: Expr -> Expr
+toInt e = case e of 
+    Value (PoneFloat f) -> Value $ PoneInteger $ truncate f
+    _ -> undefined
+makeLambda :: String -> Expr -> Expr
+makeLambda name expr = (Value $ Lam $ Lambda name expr)
+
+
+makeEnv = Environment makeBuiltins Map.empty
+
+
+
 makeLenses ''Environment 
 
 pushName :: Environment -> String -> Expr -> Environment
@@ -66,6 +80,7 @@ matchPattern lit patterns = fmap extractExpr maybeFound
           
 eval :: Environment -> Expr -> Either RuntimeError Var
 eval env expr = case expr of
+
     PatternMatch expr patterns -> do
         value :: Var <- eval env expr
         case matchPattern value patterns of
@@ -78,11 +93,20 @@ eval env expr = case expr of
     Value literal -> case literal of
         Identifier ident -> do 
             case lookupName env ident of 
-                Just match ->
-                    eval env  match
-                Nothing -> Left ("unbound name " ++ (show ident))
+                Just match -> eval env match
+                Nothing -> Left ("unbound name " ++ (show ident))--look up builtins
             
         _ -> return literal
+
+    Apply l r -> do
+        rhs :: Var <- eval env r
+        lhs :: Var <- eval env l
+        case lhs of 
+            Lam (Lambda name inner) ->
+                let newEnv = pushName env name (Value rhs) in 
+                    eval newEnv inner
+            Builtin name func -> eval env $ func (Value rhs)
+            _ -> Left $ "type error: cannot apply " ++ (show l) ++ " == " ++ (show lhs) ++ " as it is not a function"
     LocalIdentifierBind (IdentifierBind name v) e -> do
         value <- eval env v
         let newEnv = (pushName env name (Value value)) in 
@@ -95,19 +119,6 @@ eval env expr = case expr of
     --IdentifierEval s -> case lookupName env s of
     --    Just value -> return value
     --    Nothing -> Left ("Unbound name: " ++ (show s))
-    Apply e r -> do
-        lhs :: Var <- eval env e
-        case lhs of 
-            Lam (Lambda name inner) -> 
-                let newEnv = pushName env name (Value lhs) in 
-                    eval newEnv inner
-            Identifier name -> 
-                let inner = lookupName env name in
-                    case inner of
-                        Nothing -> Left "unbound name"
-                        Just inn -> eval env (Apply inn (Value lhs))
-                    
-            _ -> Left "type error"
 
 
     --ProcedureEval name args -> case name of

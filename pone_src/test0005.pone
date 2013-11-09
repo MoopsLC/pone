@@ -1,5 +1,5 @@
 define a as 1;
-define a as (a);
-(a)
+define b as a;
+b
 comment 1
-comment re-bound name
+comment global define dependency

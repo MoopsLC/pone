@@ -1,10 +1,9 @@
 type Bool is True | False;
-define a as True in 
 define makeTrue a b as
-    match a with (
+    (match a with (
         | True -> b
         | False -> makeTrue True b
-    ) 
+    ))
 in
 makeTrue False 1000
 comment 1000
