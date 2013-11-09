@@ -16,27 +16,20 @@ import Pone.Parser
       
 type RuntimeError = String
       
-data ProcedureDef = ProcedureDef String [String] Expr deriving Show
+--data ProcedureDef = ProcedureDef String [String] Expr deriving Show
 data TypeDef = TypeDef String [String] deriving Show
-data Environment = Environment { _names :: Map.Map String Var
-                               , _procs :: Map.Map String ProcedureDef
+data Environment = Environment { _names :: Map.Map String Expr
                                , _types :: Map.Map String TypeDef
                                } deriving Show
 
-makeEnv = Environment Map.empty Map.empty Map.empty
+makeEnv = Environment Map.empty Map.empty
             
 makeLenses ''Environment 
 
-pushProc :: Environment -> String -> ProcedureDef -> Environment
-pushProc env name def = procs %~ Map.insert name def $ env
-
-lookupProc :: Environment -> String -> Maybe ProcedureDef
-lookupProc env name = Map.lookup name (env ^. procs)
-
-pushName :: Environment -> String -> Var -> Environment
+pushName :: Environment -> String -> Expr -> Environment
 pushName env name value = names %~ Map.insert name value $ env
 
-lookupName :: Environment -> String -> Maybe Var
+lookupName :: Environment -> String -> Maybe Expr
 lookupName env name = Map.lookup name (env ^. names)
 
 pushType :: Environment -> String -> TypeDef -> Environment
@@ -47,14 +40,13 @@ lookupType env name = Map.lookup name (env ^. types)
     
 bind :: Environment -> GlobalDef -> Either RuntimeError Environment
 bind env def = case def of
-    GlobalProcedureBind (ProcedureBind name parameters body) ->
-        return $ pushProc env name $ ProcedureDef name parameters body
+    --GlobalProcedureBind (ProcedureBind name parameters body) ->
+    --    return $ pushProc env name $ ProcedureDef name parameters body
     GlobalIdentifierBind (IdentifierBind name value) -> do
-        evaluated <- eval env value
-        return $ pushName env name evaluated
+        return $ pushName env name value
     GlobalTypeBind (TypeBind name ctors) -> return env
 
-envMultiBind :: Environment -> [(String, Var)] -> Environment
+envMultiBind :: Environment -> [(String, Expr)] -> Environment
 envMultiBind env [] = env
 envMultiBind env ((p, v):xs) = envMultiBind (pushName env p v) xs
 
@@ -65,7 +57,7 @@ extractLit :: Pattern -> Var
 extractLit (Pattern lit _) = lit
     
 findLit :: Var -> (Pattern -> Bool)
-findLit l pattern = let lit = extractLit pattern in lit == l
+findLit l pattern = let lit = extractLit pattern in True--fixme, just check the types lit == l
     
 matchPattern :: Var -> [Pattern] -> Maybe Expr
 matchPattern lit patterns = fmap extractExpr maybeFound
@@ -83,39 +75,54 @@ eval env expr = case expr of
             Nothing -> Left ("failed to match pattern " ++ (show expr))
             
         
-    Value literal -> return literal               
+    Value literal -> return literal
     LocalIdentifierBind (IdentifierBind name v) e -> do
         value <- eval env v
-        let newEnv = (pushName env name value) in eval newEnv e
+        let newEnv = (pushName env name (Value value)) in 
+            eval newEnv e
     --make sure no repeat args
-    LocalProcedureBind (ProcedureBind name args value) expr ->  
-        let newEnv = pushProc env name (ProcedureDef name args value) in 
-        eval newEnv expr
+    --LocalProcedureBind (ProcedureBind name args value) expr ->  
+    --    let newEnv = pushProc env name (ProcedureDef name args value) in 
+    --    eval newEnv expr
         
-    IdentifierEval s -> case lookupName env s of
-        Just value -> return value
-        Nothing -> Left ("Unbound name: " ++ (show s))
-    
-    ProcedureEval name args -> case name of
-        "add" -> do v1 <- eval env (args !! 0) --fixme, 
-                    v2 <- eval env (args !! 1)
-                    case (v1, v2) of 
-                        (PoneInteger i, PoneInteger j) -> return $ PoneInteger (i + j)
-                        _ -> Left ("type error")
-        "toInt" -> do float <- eval env (args !! 0)
-                      case float of 
-                          PoneInteger i -> Left ("type error")
-                          PoneFloat f -> return $ PoneInteger $ truncate f 
-                          UserType _ -> Left ("type error")
-        other -> do
-            -- [Either String Var] -> Either String [Var]
-            evaluated :: [Var] <- sequence $ map (eval env) args-- :: [Either String Var]
-            case lookupProc env other of 
-                Just (ProcedureDef other params expr) ->
-                    let zipped :: [(String, Var)] = zip params evaluated -- make sure same length
-                        newEnv :: Environment = envMultiBind env zipped 
-                    in eval newEnv expr
-                Nothing -> Left $ "Unbound procedure: " ++ (show other) ++ (show expr)
+    --IdentifierEval s -> case lookupName env s of
+    --    Just value -> return value
+    --    Nothing -> Left ("Unbound name: " ++ (show s))
+    Apply e r -> do
+        lhs :: Var <- eval env e
+        case lhs of 
+            Lam (Lambda name inner) -> 
+                let newEnv = pushName env name (Value lhs) in 
+                    eval newEnv inner
+            Identifier name -> 
+                let inner = lookupName env name in
+                    case inner of
+                        Nothing -> Left "unbound name"
+                        Just inn -> eval env (Apply inn (Value lhs))
+                    
+            _ -> Left "type error"
+
+
+    --ProcedureEval name args -> case name of
+    --    "add" -> do v1 <- eval env (args !! 0) --fixme, 
+    --                v2 <- eval env (args !! 1)
+    --                case (v1, v2) of 
+    --                    (PoneInteger i, PoneInteger j) -> return $ PoneInteger (i + j)
+    --                    _ -> Left ("type error")
+    --    "toInt" -> do float <- eval env (args !! 0)
+    --                  case float of 
+    --                      PoneInteger i -> Left ("type error")
+    --                      PoneFloat f -> return $ PoneInteger $ truncate f 
+    --                      UserType _ -> Left ("type error")
+    --    other -> do
+    --        -- [Either String Var] -> Either String [Var]
+    --        evaluated :: [Var] <- sequence $ map (eval env) args-- :: [Either String Var]
+    --        case lookupProc env other of 
+    --            Just (ProcedureDef other params expr) ->
+    --                let zipped :: [(String, Var)] = zip params evaluated -- make sure same length
+    --                    newEnv :: Environment = envMultiBind env zipped 
+    --                in eval newEnv expr
+    --            Nothing -> Left $ "Unbound procedure: " ++ (show other) ++ (show expr)
 
 
 

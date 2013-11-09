@@ -15,6 +15,7 @@ module Pone.Ast where
              | <value-ident>
              | <integer>
              | <float>
+             | <lambda>
              | <pattern-matching>
 
     <const-bind> ::= "define" <value-ident> "as" <expr> "in" <expr>
@@ -39,6 +40,8 @@ module Pone.Ast where
     
     <float> ::= [0-9]+ "." [0-9]*
     
+    <lambda> ::= "(" <ident> "->" <expr> ")"
+
     <pattern-matching> ::= "match" <expr> "with" "(" (<pattern-bind>)+ ")"
     
     <pattern-bind> ::= "|" <type-ident> "->" <expr>
@@ -49,39 +52,39 @@ module Pone.Ast where
 type TypeIdent = String
 
 
-
 data PoneProgram = Program [GlobalDef] Expr
     deriving Show
     
-data GlobalDef = GlobalProcedureBind ProcedureBind
-               | GlobalIdentifierBind IdentifierBind
+data GlobalDef = GlobalIdentifierBind IdentifierBind
                | GlobalTypeBind TypeBind
                
     deriving Show
 
-data Var = PoneInteger Integer
-         | PoneFloat Double
-         | UserType String
-    deriving (Show, Eq)
-
 data TypeBind = TypeBind String [TypeIdent]
     deriving Show
     
-data ProcedureBind = ProcedureBind String [String] Expr 
+data Lambda = Lambda String Expr
     deriving Show
-   
+
 data IdentifierBind = IdentifierBind String Expr
     deriving Show
    
 data Pattern = Pattern Var Expr
     deriving Show
-   
-data Expr = Value Var
-          | LocalIdentifierBind IdentifierBind Expr 
-          | IdentifierEval String
-          | LocalProcedureBind ProcedureBind Expr 
-          | ProcedureEval String [Expr]
+
+
+data Var = PoneInteger Integer
+         | PoneFloat Double
+         | UserType String
+         | Lam Lambda
+         | Identifier String
+    deriving Show
+
+--an expression to be evaluated
+data Expr = LocalIdentifierBind IdentifierBind Expr 
+          | Apply !Expr !Expr --bind first Expr to the name String in Expr
           | PatternMatch Expr [Pattern]
+          | Value Var
     deriving Show
     
     

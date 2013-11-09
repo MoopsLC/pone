@@ -54,7 +54,7 @@ testSource source = case parsePone source of
 runTest :: PoneTest -> IO TestResult
 runTest (Test filename source description expectedValue) = do
     result :: Either String Var <- testSource source
-    return $ fmap (extract ((==) (PoneInteger expectedValue)) makeString) result
+    return $ Right (False, "fixme")--fmap (extract ((==) (PoneInteger expectedValue)) makeString) result
     where makeString = description ++ ": expected " ++ (show expectedValue)
         
 isFile :: String -> Bool 
@@ -71,9 +71,16 @@ trim s = unpack $ strip $ pack $ s
 
 --todo use writer monad
 main = do
-    sources :: [FilePath] <- (liftM . filter) isFile $ liftM reverse $ getDirectoryContents root --return ["test0006.pone"]--
-    tests :: [PoneTest] <- mapM (loadTest . (root ++))  sources 
-    results :: [TestResult] <- mapM runTest tests
-    let testResults :: [String] = map ((++ "\n" ) . printResult) results in
-        putStrLn $ trim $ unlines $ map ((uncurry . combine) (++ "\n")) $ zip sources testResults
-    where root = "C:/Users/M/Desktop/pone/pone_src/"
+    test <- loadTest "C:/Users/M/Desktop/pone/pone_src/test0015.pone"
+    case test of 
+        Test _ source _ _ -> case parsePone source of
+            Left err -> putStrLn err
+            Right err -> print $ err
+    putStrLn "test"
+    runTest test
+    --sources :: [FilePath] <- (liftM . filter) isFile $ liftM reverse $ return ["test0006.pone"]--getDirectoryContents root --
+    --tests :: [PoneTest] <- mapM (loadTest . (root ++))  sources 
+    --results :: [TestResult] <- mapM runTest tests
+    --let testResults :: [String] = map ((++ "\n" ) . printResult) results in
+    --    putStrLn $ trim $ unlines $ map ((uncurry . combine) (++ "\n")) $ zip sources testResults
+    --where root = "C:/Users/M/Desktop/pone/pone_src/"
