@@ -103,7 +103,7 @@ runAll = do
     let testResults :: [String] = map ((++ "\n" ) . printResult) results in
         putStrLn $ trim $ unlines $ map ((uncurry . combine) (++ "\n")) $ zip sources testResults
 
-doRunOne = True
+doRunOne = False
 main = do
     if doRunOne
         then runOne 7

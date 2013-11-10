@@ -8,10 +8,8 @@ import Text.Parsec.Language
 import Debug.Trace
 
 import Pone.Ast
+import Pone.Utils ((.:))
 
-               
-(.:) :: (c -> d) -> (a -> b -> c) -> (a -> b -> d)
-(.:) = ((.) . (.))
 
 languageDef = emptyDef{ commentStart = "<"  
                       , commentEnd = ">"
@@ -32,7 +30,9 @@ TokenParser{ parens = m_parens
            , reserved = m_reserved
            , whiteSpace = m_whiteSpace } = makeTokenParser languageDef
 
-       
+
+foo :: Monad m => (a -> m b) -> (c, a) -> m (c, b)
+foo f (x,y) = do { z <- f y ;  return (x, z) }
 parseInteger :: Parser Var
 parseInteger = PoneInteger <$> m_number
 
@@ -42,23 +42,19 @@ parseFloat = PoneFloat <$> m_float
 tryParseMany :: Parser a -> Parser [a]
 tryParseMany parser = try (spaceSep1 parser) <|> return []
 
+makeId :: String -> [String] -> Expr -> IdentifierBind
+makeId name params value = 
+    case params of 
+        [] -> IdentifierBind name value
+        xs -> IdentifierBind name (defToLambda xs value)
+
 makeBindEval :: String -> [String] -> Expr -> Expr -> Expr
 makeBindEval name params value expr = 
-    case params of
-        [] -> LocalIdentifierBind (IdentifierBind name value) expr
-        xs -> LocalIdentifierBind (IdentifierBind name (defToLambda xs value)) expr--CODE CLONE 1
-
---makeDefEval :: String -> [Expr] -> Expr
---makeDefEval name args = 
---    case args of 
---        [] -> IdentifierEval name
---        xs -> ProcedureEval name xs
+      LocalIdentifierBind (makeId name params value) expr
         
 makeGlobalDefBind :: String -> [String] -> Expr -> GlobalDef
 makeGlobalDefBind name params value = 
-    case params of
-        [] -> GlobalIdentifierBind (IdentifierBind name value)
-        xs -> GlobalIdentifierBind (IdentifierBind name (defToLambda xs value))--CODE CLONE 1
+    GlobalIdentifierBind (makeId name params value)
         
 defToLambda :: [String] -> Expr -> Expr
 defToLambda names expr = foldr (\x acc -> Value $ Lam $ Lambda x acc) expr names

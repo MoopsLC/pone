@@ -12,50 +12,16 @@ import Control.Monad
 --import System.IO.Unsafe
 
 import Pone.Ast
-import Pone.Parser   
-import Pone.Utils 
-      
+import Pone.Parser
+import Pone.Utils
+
 type RuntimeError = String
-      
+
 --data ProcedureDef = ProcedureDef String [String] Expr deriving Show
-data TypeDef = TypeDef String [String] deriving Show
-data Environment = Environment { _names :: Map.Map String Expr
-                               , _types :: Map.Map String TypeDef
-                               } deriving Show
-
-builtins = [ ("toInt", toInt)
-           , ("add", add)
-           ]
-
-makeBuiltins :: Map.Map String Expr
-makeBuiltins = foldl (\acc (k,v) -> Map.insert k v acc) Map.empty builtins
-
-toInt :: Expr
-toInt = Value $ Builtin "toInt" func
-    where func :: Expr -> Expr
-          func e = case e of
-              Value (PoneFloat f) -> Value $ PoneInteger $ truncate f
-              _ -> undefined 
-
-makeLambda :: String -> Expr -> Expr
-makeLambda name expr = (Value $ Lam $ Lambda name expr)
-
-doAdd :: Expr -> Expr -> Expr
-doAdd expr1 expr2 = case (expr1, expr2) of 
-        (Value (PoneInteger i), Value (PoneInteger j)) -> Value $ PoneInteger (i + j)
-        _ -> undefined
-
-add :: Expr
-add = Value $ Builtin "add" (\expr1 -> Value $ Builtin "addexpr" (\expr2 -> doAdd expr1 expr2))
-
---add :: Lambda
---add = makeLambda "add"
-
-makeEnv = Environment makeBuiltins Map.empty
 
 
 
-makeLenses ''Environment 
+makeLenses ''Environment
 
 pushName :: Environment -> String -> Expr -> Environment
 pushName env name value = names %~ Map.insert name value $ env
@@ -68,7 +34,13 @@ pushType env name type' = types %~ Map.insert name type' $ env
 
 lookupType :: Environment -> String -> Maybe TypeDef
 lookupType env name = Map.lookup name (env ^. types)
-    
+
+builtins = []
+
+makeBuiltins :: Map.Map String Expr
+makeBuiltins = foldl (\acc (k,v) -> Map.insert k v acc) Map.empty builtins
+
+makeEnv = Environment makeBuiltins Map.empty
 bind :: Environment -> GlobalDef -> Either RuntimeError Environment
 bind env def = case def of
     --GlobalProcedureBind (ProcedureBind name parameters body) ->
@@ -83,79 +55,78 @@ envMultiBind env ((p, v):xs) = envMultiBind (pushName env p v) xs
 
 extractExpr :: Pattern -> Expr
 extractExpr (Pattern _ expr) = expr
-    
+
 extractLit :: Pattern -> Var
 extractLit (Pattern lit _) = lit
-    
+
 findLit :: Var -> (Pattern -> Bool)
 findLit l pattern = let lit = extractLit pattern in lit == l
-    
+
 matchPattern :: Var -> [Pattern] -> Maybe Expr
 matchPattern lit patterns = fmap extractExpr maybeFound
     where maybeFound :: Maybe Pattern
           maybeFound = (find (findLit lit) patterns)
-          
+
 eval :: Environment -> Expr -> Either RuntimeError Var
 eval env expr = case expr of
 
     PatternMatch expr patterns -> do
         value :: Var <- eval env expr
         case matchPattern value patterns of
-            Just match -> do 
+            Just match -> do
                 matchValue <- eval env match
                 return matchValue
             Nothing -> Left ("failed to match pattern " ++ (show expr))
-            
+
 
     Value literal -> case literal of
-        Identifier ident -> do 
-            case lookupName env ident of 
+        Identifier ident -> do
+            case lookupName env ident of
                 Just match -> eval env match
                 Nothing -> Left ("unbound name " ++ (show ident))--look up builtins
-            
+
         _ -> return literal
 
     Apply l r -> do
         rhs :: Var <- eval env r
         lhs :: Var <- eval env l
-        case lhs of 
+        case lhs of
             Lam (Lambda name inner) ->
-                let newEnv = pushName env name (Value rhs) in 
+                let newEnv = pushName env name (Value rhs) in
                     eval newEnv inner
-            Builtin name func -> eval env $ func (Value rhs)
             _ -> Left $ "type error: cannot apply " ++ (show l) ++ " == " ++ (show lhs) ++ " as it is not a function"
     LocalIdentifierBind (IdentifierBind name v) e -> do
         value <- eval env v
-        let newEnv = (pushName env name (Value value)) in 
+        let newEnv = (pushName env name (Value value)) in
             eval newEnv e
     --make sure no repeat args
-    --LocalProcedureBind (ProcedureBind name args value) expr ->  
-    --    let newEnv = pushProc env name (ProcedureDef name args value) in 
+    --LocalProcedureBind (ProcedureBind name args value) expr ->
+    --    let newEnv = pushProc env name (ProcedureDef name args value) in
     --    eval newEnv expr
-        
+
     --IdentifierEval s -> case lookupName env s of
     --    Just value -> return value
     --    Nothing -> Left ("Unbound name: " ++ (show s))
 
 
     --ProcedureEval name args -> case name of
-    --    "add" -> do v1 <- eval env (args !! 0) --fixme, 
+    --    "add" -> do v1 <- eval env (args !! 0) --fixme,
     --                v2 <- eval env (args !! 1)
-    --                case (v1, v2) of 
+    --                case (v1, v2) of
     --                    (PoneInteger i, PoneInteger j) -> return $ PoneInteger (i + j)
     --                    _ -> Left ("type error")
     --    "toInt" -> do float <- eval env (args !! 0)
-    --                  case float of 
+    --                  case float of
     --                      PoneInteger i -> Left ("type error")
-    --                      PoneFloat f -> return $ PoneInteger $ truncate f 
+    --                      PoneFloat f -> return $ PoneInteger $ truncate f
     --                      UserType _ -> Left ("type error")
     --    other -> do
     --        -- [Either String Var] -> Either String [Var]
     --        evaluated :: [Var] <- sequence $ map (eval env) args-- :: [Either String Var]
-    --        case lookupProc env other of 
+    --        case lookupProc env other of
     --            Just (ProcedureDef other params expr) ->
     --                let zipped :: [(String, Var)] = zip params evaluated -- make sure same length
-    --                    newEnv :: Environment = envMultiBind env zipped 
+    --                    newEnv :: Environment = envMultiBind env zipped
     --                in eval newEnv expr
     --            Nothing -> Left $ "Unbound procedure: " ++ (show other) ++ (show expr)
 
@@ -169,11 +140,11 @@ showException (Left exc) = Left $ ("Interpreter: " ++) $ show exc
 showException (Right x) = Right x
 
 poneEval :: PoneProgram -> IO (Either RuntimeError Var)
-poneEval (Program globals expr) = 
+poneEval (Program globals expr) =
     let env :: Either RuntimeError Environment = foldM bind makeEnv globals
-    in case env of 
+    in case env of
         Left err -> return $ Left err
         Right e -> do
-            r <- fmap showException $ tryAny $ evaluate $ eval e expr      
+            r <- fmap showException $ tryAny $ evaluate $ eval e expr
             evaluate $ join $ r
-    
+
