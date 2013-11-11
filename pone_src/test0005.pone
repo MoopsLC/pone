@@ -1,5 +1,0 @@
-define a as 1;
-define b as a;
-b
-comment 1
-comment global define dependency

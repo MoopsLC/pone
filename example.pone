@@ -1,3 +1,4 @@
+
 interface Semigroup a is
     define add : a -> a -> a abstract;
 end

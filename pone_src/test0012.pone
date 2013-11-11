@@ -1,5 +1,0 @@
-type Bool is True | False;
-define a as True in
-1
-comment 1
-comment test custom type literal

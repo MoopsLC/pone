@@ -1,4 +1,0 @@
-type Boolean is True | False;
-1
-comment 1
-comment type definition

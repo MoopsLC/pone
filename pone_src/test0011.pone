@@ -1,4 +1,0 @@
-define b as 2.1 in
-toInt b
-comment 2
-comment test builtin toInt

@@ -1,4 +1,0 @@
-define is10 as 10;
-(is10)
-comment 10
-comment global constant test

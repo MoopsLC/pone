@@ -1,6 +1,0 @@
-define arb a as 
-    a
-in
-(arb 1)
-comment 1
-comment simple function application

@@ -1,8 +1,0 @@
-type Bool is True | False;
-define a as True in 
-(match a with (
-    | True -> 0
-    | False -> 1
-))
-comment 0
-comment simple match expression

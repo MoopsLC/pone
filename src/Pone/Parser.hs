@@ -1,6 +1,9 @@
+
 module Pone.Parser (parsePone) where
 
 import Control.Applicative((<*), (*>), (<*>), (<$>))
+import Control.Monad
+import Data.Functor.Identity
 import Text.Parsec
 import Text.Parsec.String
 import Text.Parsec.Token
@@ -10,24 +13,121 @@ import Debug.Trace
 import Pone.Ast
 import Pone.Utils ((.:))
 
---getPosition :: Monad m => ParsecT s u m SourcePos
-getLoc :: Parser t -> Location
-getLoc p = let pos = getPosition in
-    Location (sourceLine pos) (sourceColumn pos) (sourceName pos)
+languageDef = emptyDef{ commentStart = "<"
+                      , commentEnd = ">"
+                      , commentLine = "comment"
+                      , identStart = lower
+                      , identLetter = alphaNum
+                      , reservedNames = ["define", "as", "in", ";", "|", "->"]
+                      , caseSensitive = True
+                      }
 
-parseMain :: Parser PoneProgram
+
+
+TokenParser{ parens = m_parens
+           , integer = m_number
+           , float = m_float
+           , identifier = m_identifier
+           , reservedOp = m_reservedOp
+           , reserved = m_reserved
+           , comma = m_comma
+           , whiteSpace = m_whiteSpace } = makeTokenParser languageDef
+
+spaceSep1 :: Parser t -> Parser [t]
+spaceSep1 p = sepBy1 p m_whiteSpace
+
+comSep1 :: Parser t -> Parser [t]
+comSep1 p = sepBy1 p m_comma
+
+tryParseMany :: (Parser t -> Parser [t]) -> Parser t -> Parser [t]
+tryParseMany sep parser = try (sep parser) <|> return []
+
+tryParseManySpace :: Parser a -> Parser [a]
+tryParseManySpace parser = tryParseMany spaceSep1 parser
+
+tryParseManyComma :: Parser a -> Parser [a]
+tryParseManyComma parser = tryParseMany comSep1 parser
+
+tryParseMaybe :: Parser a -> Parser (Maybe a)
+tryParseMaybe parser = (Just <$> try (parser)) <|> return Nothing
+
+parseTypeId :: Parser String
+parseTypeId = try $ do { x <- upper
+                       ; xs <- many alphaNum
+                       ; _ <- m_whiteSpace
+                       ; return (x:xs)
+                       }
+
+getLoc :: Parser Location
+getLoc = do
+    pos <- getPosition
+    return $ Location (sourceLine pos) (sourceColumn pos) (sourceName pos)
+
+parseMain :: Parser (PoneProgram Type)
 parseMain = Program <$> (many parseGlobalDef) <*> parseExpr
 
-convertError :: Either ParseError PoneProgram -> Either String PoneProgram
+parseGlobalDef :: Parser (GlobalDef Type)
+parseGlobalDef =
+      DefSource <$> getLoc <*> choice [ parseTypeDef
+                                      , parseInterfaceDef
+                                      , parseGlobalFunction
+                                      , parseImplementationDef
+                                      ]
+
+parseTypeDef :: Parser (GlobalDef Type)
+parseTypeDef =
+    TypeDef <$> (m_reserved "type" *> parseTypeId)
+            <*> (tryParseManySpace m_identifier)
+            <*> (m_reserved "is" *> parseTypeDefList)
+
+parseTypeDefList :: Parser [TypeCtor]
+parseTypeDefList =
+    tryParseManySpace (m_reserved "|" *> parseTypeCtor)
+
+parseTypeCtor :: Parser TypeCtor
+parseTypeCtor = TypeCtor <$> parseTypeId <*> many (parseTypeId <|> m_identifier)
+
+parseInterfaceDef :: Parser (GlobalDef Type)
+parseInterfaceDef =
+      InterfaceDef <$> parseTypeCtor
+                   <*> (tryParseManySpace parseType)
+                   <*> (tryParseManySpace parseDefinition)
+
+parseDefinition :: Parser (Definition Type)
+parseDefinition =
+    Definition <$> (m_reserved "define" *> m_identifier)
+               <*> tryParseManySpace m_identifier
+               <*> (m_reserved ":" *> parseType)
+               <*> (try (m_reserved "where" *> m_parens (tryParseManyComma parseConstraint)) <|> return [])
+               <*> (m_reserved "as" *> tryParseMaybe parseExpr <* try (m_reserved "abstract") <* try(m_reserved "end"))
+
+
+parseConstraint :: Parser (Constraint Type)
+parseConstraint = undefined
+
+
+parseType :: Parser Type
+parseType = undefined
+
+parseImplementationDef :: Parser (GlobalDef Type)
+parseImplementationDef = undefined
+
+parseGlobalFunction :: Parser (GlobalDef Type)
+parseGlobalFunction = undefined
+
+parseExpr :: Parser (Expr Type)
+parseExpr = undefined
+
+convertError :: Either ParseError (PoneProgram Type) -> Either String (PoneProgram Type)
 convertError (Left err) = Left $ show err
 convertError (Right prog) = Right prog
 
-printAst :: Either a PoneProgram -> Either a PoneProgram
+printAst :: Show b => Either a b -> Either a b
 printAst arg = case arg of
     Left err -> arg
     Right ast -> trace (show ast) arg
 
-parsePone :: String -> Either String PoneProgram
+parsePone :: String -> Either String (PoneProgram Type)
 parsePone src = convertError $ printAst $ parse parseMain "" src
 
 --parseProgram :: Parser PoneProgram

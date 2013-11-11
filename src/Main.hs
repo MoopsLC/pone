@@ -46,7 +46,7 @@ appendEither msg e = case e of
     Right x -> e
 
 --todo: use monad transformer (ErrorT?)
-testSource :: String -> IO (Either String Var)
+testSource :: String -> IO (Either String Value)
 testSource source = case parsePone source of
     Left error -> return $ Left error
     Right ast -> do
@@ -63,7 +63,7 @@ tryWithTimeout msg s proc = do
 
 runTest :: PoneTest -> IO TestResult
 runTest (Test filename source description expectedValue) = do
-    result :: Either String Var <- tryWithTimeout "Interpreter timeout" 3 (testSource source)
+    result :: Either String Value <- tryWithTimeout "Interpreter timeout" 3 (testSource source)
     return $ fmap (extract ((==) (PoneInteger expectedValue)) makeString) result
     where makeString = description ++ ": expected " ++ (show expectedValue)
 
