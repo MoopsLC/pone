@@ -1,0 +1,66 @@
+; Pone grammar v 0.1
+
+<program> ::= (<global-definition>)* <expr>
+
+<global-definition> ::= <type-definition>
+                      | <global-function-definition>
+                      | <interface-definition>
+                      | <interface-implementation>
+
+<type> ::= "(" <type> ")"
+         | <type> "->" <type>
+         | (<type-variable> | <type-identifier>) (<type>)*
+         | "_"
+
+<type-definition> ::= "type" <type-identifier> <type-variable>* "is" <type-list> "end"
+
+<type-list> ::= ("|" <type-ctor>)*
+
+<type-ctor> ::= <type-identifier> (<type>)*
+
+<type-identifier> ::= '[A-Z*][a-zA-Z0-9*]*'
+
+<type-variable> ::= '[a-z][a-zA-Z0-9]*'
+
+<identifier> ::= '[a-z][a-zA-Z0-9]*'
+
+<function-signature> ::= "define" <identifier> (<identifier>)* <type-annotation>
+
+<abstract-function> ::= <function-signature> "abstract"
+
+<function-definition> ::= <function-signature> "as" <expr>
+
+<global-function-definition> :: <function-definition> "end"
+
+<type-annotation> ::= ":" <type> ("where" (<constraint>)+)?
+
+<constraint> ::= <type-variable> "<" <type>
+
+<interface-definition> ::= "interface" <type-ctor> ("extends" <type-ctor>)? "is" <interface-body> "end"
+
+<interface-body> ::= (<function-definition> | <abstract-function>) *
+
+<interface-implementation> ::= "implement" <type> "for" <type> "as" (<global-function-definition>)* "end"
+
+<expr-no-apply> ::= <identifier>
+                  | <type-identifier>
+                  | <literal>
+                  | <lambda>
+                  | <local-bind>
+                  | <pattern-match>
+                  | "unknown"
+
+<expr> ::= <function-application>
+         | <expr-no-apply>
+
+<literal> ::= float | int | string
+
+<lambda> ::= "(" "λ" <identifier> "." <expr> ")"
+
+<local-bind> ::= <function-definition> "in" <expr>
+
+<pattern-match> ::= "match" <expr> "with" (<pattern-branch>)* "end"
+
+<pattern-branch> ::= "|" <type-identifier> (<type>)* "->" <expr>
+
+<function-application> ::= <expr-no-apply> (<expr-no-apply>)+

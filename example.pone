@@ -1,0 +1,83 @@
+interface Semigroup a is
+    define add : a -> a -> a abstract;
+end
+
+interface Monoid a extends Semigroup a is
+    define zero : a abstract;
+end
+
+interface Functor f {
+    define map : (a -> b) -> f a -> f b abstract
+end
+
+interface Applicative f extends Functor f is
+    define ap : f (a -> b) -> f a -> f b abstract
+    define bind : a -> f a abstract
+end
+
+interface Monad m extends Applicative m is
+    define flatMap : (a -> m b) -> m a -> m b abstract;
+    define join x : m (m a) -> m a as
+        flatMap x id
+    end
+end
+
+implement Monad for List as
+    define flatMap f list : (a -> List b) -> List a -> List b as
+        join (map f list)
+    end
+    define join x : List (List a) -> List a as
+        flatten x
+    end
+end
+
+implement Monoid for Int as
+    define add : Int -> Int -> Int
+        native_add
+    end
+end
+
+type Bool is
+    | True
+    | False
+end
+
+type List a is
+    | Nil
+    | Cons a List
+end
+
+type * a b is * a b end
+
+define flip f : (a -> c -> b) -> (b -> a -> c) as
+    (λ x . (λ y . f y x))
+end
+
+define fst t: (* a b) -> a as
+    match t with
+    | * x y -> x
+    end
+end
+
+define snd t: * a b -> b as
+    match t with
+    | * x y -> y
+    end
+end
+
+define add ass bss : * a a -> * b b -> * a b
+where (a < Monoid, b < Monoid) as
+    define a1 as (add (fst ass) (snd ass)) in
+    define b1 as (add (fst bss) (fst bss)) in
+    * a1 b1
+end
+
+define fact a : Int -> Int as
+    define factHelper acc n as
+        match n with
+        | 1 -> acc
+        | n -> factHelper (mult acc n) (sub n 1)
+        end
+    in
+    factHelper
+end

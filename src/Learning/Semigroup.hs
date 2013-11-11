@@ -1,4 +1,4 @@
-﻿module Learning.Semigroup
+module Learning.Semigroup
 ( Semigroup
 , (<+>)
 ) where 

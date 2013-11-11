@@ -1,4 +1,4 @@
-﻿module Learning.Monoid 
+module Learning.Monoid 
 ( Monoid
 , zero
 ) where 
