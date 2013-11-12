@@ -1,0 +1,7 @@
+type Bool is
+    | True
+    | False
+end
+0
+;True
+;simple type

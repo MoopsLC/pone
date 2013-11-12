@@ -9,14 +9,13 @@
 
 <type> ::= "(" <type> ")"
          | <type> "->" <type>
-         | (<type-variable> | <type-identifier>) (<type>)*
-         | "_"
+         | (<type-variable> | <type-identifier>) (<type>)* ; condensed to apply later?
 
 <type-definition> ::= "type" <type-identifier> <type-variable>* "is" <type-list> "end"
 
 <type-list> ::= ("|" <type-ctor>)*
 
-<type-ctor> ::= <type-identifier> (<type>)*
+<type-ctor> ::= <type-identifier> (<type-identifier> | <type-variable>)*
 
 <type-identifier> ::= '[A-Z*][a-zA-Z0-9*]*'
 

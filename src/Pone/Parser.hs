@@ -15,10 +15,10 @@ import Pone.Utils ((.:))
 
 languageDef = emptyDef{ commentStart = "<"
                       , commentEnd = ">"
-                      , commentLine = "comment"
+                      , commentLine = ";"
                       , identStart = lower
                       , identLetter = alphaNum
-                      , reservedNames = ["define", "as", "in", ";", "|", "->"]
+                      , reservedNames = ["begin", "end", "match", "with", "in", "interface", "extends", "type", "abstract", "as", "is", "implement", "for", "where", "unknown", "|", "->"]
                       , caseSensitive = True
                       }
 
@@ -61,20 +61,20 @@ parseTypeId = try $ do { x <- upper
 getLoc :: Parser Location
 getLoc = do
     pos <- getPosition
-    return $ Location (sourceLine pos) (sourceColumn pos) (sourceName pos)
+    return $ Location 1 1 ""--(sourceLine pos) (sourceColumn pos) (sourceName pos)
 
-parseMain :: Parser (PoneProgram Type)
+parseMain :: Parser (PoneProgram (Type Kind))
 parseMain = Program <$> (many parseGlobalDef) <*> parseExpr
 
-parseGlobalDef :: Parser (GlobalDef Type)
+parseGlobalDef :: Parser (GlobalDef (Type Kind))
 parseGlobalDef =
-      DefSource <$> getLoc <*> choice [ parseTypeDef
+      DefSource <$> getLoc <*> parseInterfaceDef {-choice [ parseTypeDef
                                       , parseInterfaceDef
                                       , parseGlobalFunction
                                       , parseImplementationDef
-                                      ]
+                                      ]-}
 
-parseTypeDef :: Parser (GlobalDef Type)
+parseTypeDef :: Parser (GlobalDef t)
 parseTypeDef =
     TypeDef <$> (m_reserved "type" *> parseTypeId)
             <*> (tryParseManySpace m_identifier)
@@ -85,40 +85,60 @@ parseTypeDefList =
     tryParseManySpace (m_reserved "|" *> parseTypeCtor)
 
 parseTypeCtor :: Parser TypeCtor
-parseTypeCtor = TypeCtor <$> parseTypeId <*> many (parseTypeId <|> m_identifier)
+parseTypeCtor = TypeCtor <$> parseTypeId <*> tryParseManySpace (parseTypeId <|> m_identifier)
 
-parseInterfaceDef :: Parser (GlobalDef Type)
-parseInterfaceDef =
-      InterfaceDef <$> parseTypeCtor
-                   <*> (tryParseManySpace parseType)
-                   <*> (tryParseManySpace parseDefinition)
 
-parseDefinition :: Parser (Definition Type)
+parseInterfaceDef :: Parser (GlobalDef (Type Kind)) =
+      InterfaceDef <$> (m_reserved "interface" *> parseTypeCtor)
+                   <*> (try (m_reserved "extends" *> tryParseManyComma parseTypeCtor) <|> return [])
+                   <*> (m_reserved "is" *> tryParseManySpace parseDefinition <* m_reserved "end")
+
+
+parseDefinition :: Parser (Definition (Type Kind))
 parseDefinition =
     Definition <$> (m_reserved "define" *> m_identifier)
                <*> tryParseManySpace m_identifier
                <*> (m_reserved ":" *> parseType)
                <*> (try (m_reserved "where" *> m_parens (tryParseManyComma parseConstraint)) <|> return [])
-               <*> (m_reserved "as" *> tryParseMaybe parseExpr <* try (m_reserved "abstract") <* try(m_reserved "end"))
+               <*> (    (m_reserved "as" *> (Just <$> parseExpr) <* try(m_reserved "end"))
+                    <|> (m_reserved "abstract" *> return Nothing))
 
 
-parseConstraint :: Parser (Constraint Type)
-parseConstraint = undefined
+parseConstraint :: Parser (Constraint (Type Kind))
+parseConstraint =
+    Constraint <$> m_identifier
+               <*> (m_reserved "<" *> parseType)
+
+parseTypeNoArrow :: Parser (Type Kind)
+parseTypeNoArrow = m_parens parseType
+                 <|> (TypeValue <$> (parseTypeId <|> m_identifier) <*> return UnknownK)
+
+parseType :: Parser (Type Kind)
+parseType = try(parseTypeArrow) <|> parseTypeNoArrow
+
+parseTypeArrow :: Parser (Type Kind)
+parseTypeArrow =
+    (listToArrow .: ArrowList) <$> (parseTypeNoArrow)
+                               <*> many (m_reserved "->" *> parseTypeNoArrow)
 
 
-parseType :: Parser Type
-parseType = undefined
+parseImplementationDef :: Parser (GlobalDef (Type Kind))
+parseImplementationDef =
+    ImplementationDef <$> (m_reserved "implement" *> parseTypeId)
+                      <*> (m_reserved "for" *> parseTypeId)
+                      <*> (m_reserved "as" *> tryParseManySpace parseDefinition <* m_reserved "end")
 
-parseImplementationDef :: Parser (GlobalDef Type)
-parseImplementationDef = undefined
+parseGlobalFunction :: Parser (GlobalDef (Type Kind))
+parseGlobalFunction =
+    GlobalFunction <$> (parseDefinition <* m_reserved "end")
 
-parseGlobalFunction :: Parser (GlobalDef Type)
-parseGlobalFunction = undefined
+parseExpr :: Parser (Expr (Type Kind))
+parseExpr = {-Source <$> getLoc <*> -}(Literal <$> parseInteger <*> return bottom)
 
-parseExpr :: Parser (Expr Type)
-parseExpr = undefined
+parseInteger :: Parser Value
+parseInteger = PoneInteger <$> m_number
 
-convertError :: Either ParseError (PoneProgram Type) -> Either String (PoneProgram Type)
+convertError :: Either ParseError (PoneProgram t) -> Either String (PoneProgram t)
 convertError (Left err) = Left $ show err
 convertError (Right prog) = Right prog
 
@@ -127,8 +147,8 @@ printAst arg = case arg of
     Left err -> arg
     Right ast -> trace (show ast) arg
 
-parsePone :: String -> Either String (PoneProgram Type)
-parsePone src = convertError $ printAst $ parse parseMain "" src
+parsePone :: String -> Either String (PoneProgram (Type Kind))
+parsePone src = convertError $ parse parseMain "" src
 
 --parseProgram :: Parser PoneProgram
 --parseProgram = Program <$> (many parseGlobalDef) <*> parseExpr

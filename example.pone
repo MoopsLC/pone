@@ -1,10 +1,10 @@
 
 interface Semigroup a is
-    define add : a -> a -> a abstract;
+    define add : a -> a -> a abstract
 end
 
 interface Monoid a extends Semigroup a is
-    define zero : a abstract;
+    define zero : a abstract
 end
 
 interface Functor f {
@@ -17,7 +17,7 @@ interface Applicative f extends Functor f is
 end
 
 interface Monad m extends Applicative m is
-    define flatMap : (a -> m b) -> m a -> m b abstract;
+    define flatMap : (a -> m b) -> m a -> m b abstract
     define join x : m (m a) -> m a as
         flatMap x id
     end

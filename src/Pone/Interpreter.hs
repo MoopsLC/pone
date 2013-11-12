@@ -117,5 +117,7 @@ type RuntimeError = String
 --            r <- fmap showException $ tryAny $ evaluate $ eval e expr
 --            evaluate $ join $ r
 
-poneEval :: PoneProgram Type -> IO (Either RuntimeError Value)
-poneEval prog = return $ Left "error"
+--poneEval :: PoneProgram Type -> IO (Either RuntimeError Value)
+--poneEval prog = return $ Left "error"
+
+poneEval = 1
