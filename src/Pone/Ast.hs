@@ -51,21 +51,32 @@ data Constraint t = Constraint TypeVariable t
 data Value = PoneInteger Integer
            | PoneFloat Double
            | PoneString String
-    deriving (Show, Eq)
+    deriving (Eq)
+
+instance Show Value where
+    show (PoneInteger i) = show i
+    show (PoneFloat f) = show f
+    show (PoneString s) = show s
 
 data Expr t = Identifier IdentifierName t
-            | TypeIdentifier TypeCtor t --isnt this just a lambda?
             | Literal Value t
             | Lambda IdentifierName (Expr t)
             | Apply (Expr t) (Expr t)
             | Source Location (Expr t)
             | Unknown
-    deriving (Show)
 
-data ApplyList t = ApplyList [t]
+instance Show (Expr t) where
+  show (Lambda name expr) = "[λ " ++ name ++ " . " ++ (show expr) ++ "]"
+  show (Apply e0 e1) = (show e0) ++ " " ++ (show e1)
+  show (Source loc expr) = show expr
+  show Unknown = undefined
+  show (Literal v t') = show v
+  show (Identifier id' t') = id'
+
+data ApplyList t = ApplyList t [t]
 
 listToApply :: (t -> t -> t)->  ApplyList t -> t
-listToApply f (ApplyList xs) = foldl1 f xs
+listToApply f (ApplyList x xs) = foldl f x xs
 --a b c d === (Apply (Apply (Apply a b) c) d)
 
 data Type k = ProdT (Type k) (Type k)
@@ -85,8 +96,8 @@ data Kind = ProdK Kind Kind
     deriving (Show)
 
 data ArrowList k = ArrowList (Type k) [Type k]
+--listToArrow :: ArrowList k -> Type k
+--listToArrow (ArrowList t0 ts) = foldl ProdT t0 ts
+
 listToArrow :: ArrowList k -> Type k
-listToArrow (ArrowList t0 ts) = foldl ProdT t0 ts
--- a -> b -> c -> d === a -> (b -> (c -> d)))
--- Prod ((->) a ((->) b ((->) c d)))
---(Apply (Apply ((->) a)) (Apply (Apply (->) b) (Apply (Apply (->) c) d)))))
+listToArrow (ArrowList tt tts) = foldl (\x acc -> ProdT (ProdT Arrow acc) x) tt tts

@@ -45,7 +45,7 @@ makeJudgement result (Test filename source description expectedValue) =
     either (judge False) (\v -> judge (expectedValue == v) ("expected " ++ expectedValue ++ " got " ++ v)) result
     where judge = Judgement filename description
 
-
+--eagerly get contents, taken from strict io package
 getUtf8 h = hGetContents h >>= \s -> length s `seq` return s
 
 loadTest :: String -> IO (PoneTest String)
@@ -54,7 +54,7 @@ loadTest filename = do
         hSetEncoding h utf8
         contents <- getUtf8 h
 
-    --contents <- readFile filename
+        --contents <- readFile filename
         let (source, desc, val) = splitTest contents in
             return $ Test filename source desc val
         where splitTest :: String -> (String, String, String)
