@@ -1,3 +1,39 @@
-operational semantics for pone
+Operational Semantics
 
-TODO
+DEFINE-CONST
+
+<E, expr0> -> v0
+----------------
+<E, define a : T as expr0 in expr1> -> <E[v0/a], expr1>
+
+DEFINE-PROCEDURE-REDUCE
+
+-------------
+<E, define f a0 a1 ... aN : T as expr> ->  <E, define f : T as (λ a0 . (λ a1 . ...( λ aN . expr) ... ))>
+
+
+DEFINE-APPLY
+
+<E, expr1> -> v1
+<E, expr0> -> (λ x . expr2)
+--------------------
+<E, expr0 expr1> -> <E[v1/x], expr2>
+
+
+EVAL-IDENTIFIER
+
+E[a] = expr0
+------------
+<E, a> -> <E, expr0>
+
+PATTERN-MATCH
+
+<E, expr> -> v
+v matches patK
+---------------
+<E,   match expr with  > -> <E[bind patK], exprK>
+      | pat0 -> expr0
+      | pat1 -> expr1
+      ...
+      | patN -> exprN
+      end
