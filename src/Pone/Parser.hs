@@ -115,12 +115,18 @@ parseTypeNoArrow = m_parens parseType
                  <|> (TypeValue <$> (parseTypeId <|> m_identifier) <*> return UnknownK)
 
 parseType :: Parser (Type Kind)
-parseType = try(parseTypeArrow) <|> parseTypeNoArrow
+parseType = try(parseTypeArrow) <|> try(parseTypeApply) <|> parseTypeNoArrow
+
+parseTypeNoApply :: Parser (Type Kind)
+parseTypeNoApply = TypeValue <$> (m_identifier <|> parseTypeId) <*> return UnknownK
 
 parseTypeArrow :: Parser (Type Kind)
 parseTypeArrow =
     (listToArrow .: ArrowList) <$> (parseTypeNoArrow)
                                <*> many (m_reserved "->" *> parseTypeNoArrow)
+
+parseTypeApply :: Parser (Type Kind)
+parseTypeApply = parseGenApply ProdT parseTypeNoApply
 
 
 parseImplementationDef :: Parser (GlobalDef (Type Kind))
@@ -143,19 +149,22 @@ parseExprNoApply =
 parseExpr :: Parser (Expr (Type Kind))
 parseExpr = try(parseApply) <|> parseExprNoApply
 
+parseGenApply :: (t -> t -> t) -> Parser t -> Parser t
+parseGenApply f parser =
+    ((listToApply f) . ApplyList) <$> do { first <- parser
+                                         ; second <- parser
+                                         ; rest <- many parser
+                                         ; return $ (first:second:rest)
+                                         }
 parseApply :: Parser (Expr (Type Kind))
-parseApply = (listToApply . ApplyList) <$> do { first <- parseExprNoApply
-                                              ; second <- parseExprNoApply
-                                              ; rest <- many parseExprNoApply
-                                              ; return $ (first:second:rest)
-                                              }
+parseApply = parseGenApply Apply parseExprNoApply
 
 parseLiteral :: Parser (Expr (Type Kind))
 parseLiteral = Literal <$> choice [ parseInteger
-                                  ] <*> return bottom
+                                  ] <*> return UnknownT
 
 parseIdentifier :: Parser (Expr (Type Kind))
-parseIdentifier = Identifier <$> m_identifier <*> return bottom
+parseIdentifier = Identifier <$> m_identifier <*> return UnknownT
 
 parseLambda :: Parser (Expr (Type Kind))
 parseLambda = Lambda <$> (m_reserved "λ" *> m_identifier)

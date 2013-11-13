@@ -62,30 +62,31 @@ data Expr t = Identifier IdentifierName t
             | Unknown
     deriving (Show)
 
-data ApplyList t = ApplyList [Expr t]
+data ApplyList t = ApplyList [t]
 
-listToApply :: ApplyList t -> Expr t
-listToApply (ApplyList xs) = foldl1 Apply xs
+listToApply :: (t -> t -> t)->  ApplyList t -> t
+listToApply f (ApplyList xs) = foldl1 f xs
 --a b c d === (Apply (Apply (Apply a b) c) d)
 
-data TypeApplyList k = TypeApplyList [Type k]
-listToTypeApply :: ApplyList k -> Type k
-listToTypeApply (TypeApplyList xs) = foldl1 Prod xs
-
-
-data Type k = Prod (Type k){-must be TypeValue, refactor-} (Type k)
-            | Arrow (Type k) (Type k)
+data Type k = ProdT (Type k) (Type k)
             | TypeValue TypeName k
+            | Arrow
             | UnknownT
-    deriving (Show)
 
-data Kind = UnknownK
-    deriving (Show)
+instance Show (Type k) where
+  show (ProdT t0 t1) = "(" ++ (show t0) ++ " " ++ (show t1) ++ ")"
+  show Arrow = "(->)"
+  show UnknownT = "⊥"
+  show (TypeValue string k) = string
 
-bottom :: Type k
-bottom = UnknownT
+data Kind = ProdK Kind Kind
+          | Star
+          | UnknownK
+    deriving (Show)
 
 data ArrowList k = ArrowList (Type k) [Type k]
 listToArrow :: ArrowList k -> Type k
-listToArrow (ArrowList t0 ts) = foldl Arrow t0 ts
+listToArrow (ArrowList t0 ts) = foldl ProdT t0 ts
 -- a -> b -> c -> d === a -> (b -> (c -> d)))
+-- Prod ((->) a ((->) b ((->) c d)))
+--(Apply (Apply ((->) a)) (Apply (Apply (->) b) (Apply (Apply (->) c) d)))))
