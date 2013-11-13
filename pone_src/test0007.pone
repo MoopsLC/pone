@@ -1,0 +1,8 @@
+define add ass bss : * a a as
+    define a1 as (add (fst ass) (snd ass)) in
+    define b1 as (add (fst bss) (fst bss)) in
+    * a1 b1
+end
+0
+;0
+;type with constraints

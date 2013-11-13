@@ -18,20 +18,21 @@ languageDef = emptyDef{ commentStart = "<"
                       , commentLine = ";"
                       , identStart = lower
                       , identLetter = alphaNum
-                      , reservedNames = ["begin", "end", "match", "with", "in", "interface", "extends", "type", "abstract", "as", "is", "implement", "for", "where", "unknown", "|", "->"]
+                      , reservedNames = ["begin", "end", "match", "with", "in", "interface", "extends", "type", "abstract", "as", "is", "implement", "for", "where", "unknown", "|", "->", ".", "λ"]
                       , caseSensitive = True
                       }
 
 
 
-TokenParser{ parens = m_parens
-           , integer = m_number
-           , float = m_float
-           , identifier = m_identifier
-           , reservedOp = m_reservedOp
-           , reserved = m_reserved
-           , comma = m_comma
-           , whiteSpace = m_whiteSpace } = makeTokenParser languageDef
+TokenParser { parens = m_parens
+            , brackets = m_brackets
+            , integer = m_number
+            , float = m_float
+            , identifier = m_identifier
+            , reservedOp = m_reservedOp
+            , reserved = m_reserved
+            , comma = m_comma
+            , whiteSpace = m_whiteSpace } = makeTokenParser languageDef
 
 spaceSep1 :: Parser t -> Parser [t]
 spaceSep1 p = sepBy1 p m_whiteSpace
@@ -70,7 +71,7 @@ parseGlobalDef :: Parser (GlobalDef (Type Kind))
 parseGlobalDef =
       DefSource <$> getLoc <*> choice [ parseTypeDef
                                       , parseInterfaceDef
-                                      -- , parseGlobalFunction
+                                      , parseGlobalFunction
                                       -- , parseImplementationDef
                                       ]
 
@@ -100,7 +101,7 @@ parseDefinition =
                <*> tryParseManySpace m_identifier
                <*> (m_reserved ":" *> parseType)
                <*> (try (m_reserved "where" *> m_parens (tryParseManyComma parseConstraint)) <|> return [])
-               <*> (    (m_reserved "as" *> (Just <$> parseExpr) <* try(m_reserved "end"))
+               <*> (    (m_reserved "as" *> (Just <$> parseExpr))
                     <|> (m_reserved "abstract" *> return Nothing))
 
 
@@ -132,8 +133,33 @@ parseGlobalFunction :: Parser (GlobalDef (Type Kind))
 parseGlobalFunction =
     GlobalFunction <$> (parseDefinition <* m_reserved "end")
 
+parseExprNoApply :: Parser (Expr (Type Kind))
+parseExprNoApply =
+    Source <$> getLoc <*> choice [ m_parens parseExpr
+                                 , parseLiteral
+                                 , m_brackets parseLambda
+                                 , parseIdentifier]
+
 parseExpr :: Parser (Expr (Type Kind))
-parseExpr = {-Source <$> getLoc <*> -}(Literal <$> parseInteger <*> return bottom)
+parseExpr = try(parseApply) <|> parseExprNoApply
+
+parseApply :: Parser (Expr (Type Kind))
+parseApply = (listToApply . ApplyList) <$> do { first <- parseExprNoApply
+                                              ; second <- parseExprNoApply
+                                              ; rest <- many parseExprNoApply
+                                              ; return $ (first:second:rest)
+                                              }
+
+parseLiteral :: Parser (Expr (Type Kind))
+parseLiteral = Literal <$> choice [ parseInteger
+                                  ] <*> return bottom
+
+parseIdentifier :: Parser (Expr (Type Kind))
+parseIdentifier = Identifier <$> m_identifier <*> return bottom
+
+parseLambda :: Parser (Expr (Type Kind))
+parseLambda = Lambda <$> (m_reserved "λ" *> m_identifier)
+                     <*> (m_reserved "." *> parseExpr)
 
 parseInteger :: Parser Value
 parseInteger = PoneInteger <$> m_number
@@ -147,8 +173,8 @@ printAst arg = case arg of
     Left err -> arg
     Right ast -> trace (show ast) arg
 
-parsePone :: String -> Either String (PoneProgram (Type Kind))
-parsePone src = convertError $ parse parseMain "" src
+parsePone :: String -> String -> Either String (PoneProgram (Type Kind))
+parsePone filename src = convertError $ parse parseMain {-filename {-removed until i get pretty printing working-}-} "" src
 
 --parseProgram :: Parser PoneProgram
 --parseProgram = Program <$> (many parseGlobalDef) <*> parseExpr

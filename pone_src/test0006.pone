@@ -1,0 +1,6 @@
+define flip f : (a -> c -> b) -> (b -> a -> c) as
+    [λ x . [λ y . f y x]]
+end
+0
+;0
+;global define with lambda

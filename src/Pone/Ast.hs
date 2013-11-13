@@ -10,8 +10,11 @@ type IdentifierName = String
 
 data PoneProgram t = Program [GlobalDef t] (Expr t)
 
-instance Show (PoneProgram t) where
-  show (Program defs expr) = "Program: "
+getExpr :: PoneProgram t -> Expr t
+getExpr (Program _ e) = e
+
+instance Show (PoneProgram (Type Kind)) where
+  show (Program defs expr) = "Program: " ++ (show defs) ++ (show expr)
 
 data Location = Location Int    --line number
                          Int    --column
@@ -50,7 +53,7 @@ data Value = PoneInteger Integer
            | PoneString String
     deriving (Show, Eq)
 
-data Expr t = Identifirer IdentifierName t
+data Expr t = Identifier IdentifierName t
             | TypeIdentifier TypeCtor t --isnt this just a lambda?
             | Literal Value t
             | Lambda IdentifierName (Expr t)
@@ -58,6 +61,17 @@ data Expr t = Identifirer IdentifierName t
             | Source Location (Expr t)
             | Unknown
     deriving (Show)
+
+data ApplyList t = ApplyList [Expr t]
+
+listToApply :: ApplyList t -> Expr t
+listToApply (ApplyList xs) = foldl1 Apply xs
+--a b c d === (Apply (Apply (Apply a b) c) d)
+
+data TypeApplyList k = TypeApplyList [Type k]
+listToTypeApply :: ApplyList k -> Type k
+listToTypeApply (TypeApplyList xs) = foldl1 Prod xs
+
 
 data Type k = Prod (Type k){-must be TypeValue, refactor-} (Type k)
             | Arrow (Type k) (Type k)
