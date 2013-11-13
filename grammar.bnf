@@ -31,15 +31,17 @@
 
 <global-function-definition> :: <function-definition> "end"
 
-<type-annotation> ::= ":" <type> ("where" (<constraint>)+)?
+<type-annotation> ::= ":" <type> ("where" <constraint-list>)?
+
+<constraint-list> ::= "(" <constraint> ("," <constraint>)* ")"
 
 <constraint> ::= <type-variable> "<" <type>
 
-<interface-definition> ::= "interface" <type-ctor> ("extends" <type-ctor>)? "is" <interface-body> "end"
+<interface-definition> ::= "interface" <type> ("extends" <type>)? "is" <interface-body> "end"
 
 <interface-body> ::= (<function-definition> | <abstract-function>) *
 
-<interface-implementation> ::= "implement" <type> "for" <type> "as" (<global-function-definition>)* "end"
+<interface-implementation> ::= "implement" <type> "for" <type> ("where" <constraint-list>)? "as" (<global-function-definition>)* "end"
 
 <expr-no-apply> ::= <identifier>
                   | <type-identifier>
