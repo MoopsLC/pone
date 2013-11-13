@@ -56,7 +56,7 @@
 
 <literal> ::= float | int | string
 
-<lambda> ::= "(" "λ" <identifier> "." <expr> ")"
+<lambda> ::= "[" "λ" <identifier> "." <expr> "]"
 
 <local-bind> ::= <function-definition> "in" <expr>
 

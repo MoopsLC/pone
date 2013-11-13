@@ -38,6 +38,14 @@ implement Monoid for Int as
     end
 end
 
+implement Monoid for * a a where (a < Monoid) as
+    define add x y: (* a a) -> (* a a) -> (* a a)
+        define z0 as (add (fst x) (fst y)) in
+        define z1 as (add (snd x) (snd y)) in
+        * z0 z1
+    end
+end
+
 type Bool is
     | True
     | False
@@ -52,8 +60,12 @@ type * a b is
     | * a b
 end
 
+define double x : (a -> a) as
+    add x x
+end
+
 define flip f : (a -> c -> b) -> (b -> a -> c) as
-    (λ x . (λ y . f y x))
+    [λ x . [λ y . f y x]]
 end
 
 define fst t: (* a b) -> a as
