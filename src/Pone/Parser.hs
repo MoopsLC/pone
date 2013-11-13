@@ -52,7 +52,7 @@ tryParseMaybe :: Parser a -> Parser (Maybe a)
 tryParseMaybe parser = (Just <$> try (parser)) <|> return Nothing
 
 parseTypeId :: Parser String
-parseTypeId = try $ do { x <- upper
+parseTypeId = try $ do { x <- (upper <|> char '*')
                        ; xs <- many alphaNum
                        ; _ <- m_whiteSpace
                        ; return (x:xs)
@@ -68,17 +68,17 @@ parseMain = Program <$> (many parseGlobalDef) <*> parseExpr
 
 parseGlobalDef :: Parser (GlobalDef (Type Kind))
 parseGlobalDef =
-      DefSource <$> getLoc <*> parseInterfaceDef {-choice [ parseTypeDef
+      DefSource <$> getLoc <*> choice [ parseTypeDef
                                       , parseInterfaceDef
-                                      , parseGlobalFunction
-                                      , parseImplementationDef
-                                      ]-}
+                                      -- , parseGlobalFunction
+                                      -- , parseImplementationDef
+                                      ]
 
 parseTypeDef :: Parser (GlobalDef t)
 parseTypeDef =
     TypeDef <$> (m_reserved "type" *> parseTypeId)
             <*> (tryParseManySpace m_identifier)
-            <*> (m_reserved "is" *> parseTypeDefList)
+            <*> (m_reserved "is" *> parseTypeDefList <* m_reserved "end")
 
 parseTypeDefList :: Parser [TypeCtor]
 parseTypeDefList =

@@ -48,7 +48,9 @@ type List a is
     | Cons a List
 end
 
-type * a b is * a b end
+type * a b is
+    | * a b
+end
 
 define flip f : (a -> c -> b) -> (b -> a -> c) as
     (λ x . (λ y . f y x))

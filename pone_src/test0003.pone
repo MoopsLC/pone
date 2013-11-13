@@ -1,0 +1,7 @@
+type List a is
+    | Nil
+    | Cons a List
+end
+0
+;0
+;type with parameters

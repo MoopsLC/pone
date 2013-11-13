@@ -2,5 +2,5 @@ interface Semigroup a is
     define add : (a -> a -> a) abstract
 end
 0
-;True
+;0
 ;simple interface

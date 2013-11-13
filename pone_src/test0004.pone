@@ -1,0 +1,6 @@
+type * a b is
+    | * a b
+end
+0
+;0
+;type with multiple parameters

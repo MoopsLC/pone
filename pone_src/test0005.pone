@@ -1,0 +1,5 @@
+define double x : (a -> a) as
+    add x x
+end
+;0
+;simple global function

@@ -3,5 +3,5 @@ type Bool is
     | False
 end
 0
-;True
+;0
 ;simple type

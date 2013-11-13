@@ -8,6 +8,7 @@ printInline a b = (trace (show a)) b
 (.:) :: (c -> d) -> (a -> b -> c) -> (a -> b -> d)
 (.:) = ((.) . (.))
 
+-- | ignore dot files
 isFile :: String -> Bool
 isFile [] = False
 isFile ('.':[]) = False
