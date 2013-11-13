@@ -20,18 +20,17 @@ data Judgement = Judgement String --filename
                            Bool   --pass or fail
                            String --reason
 
-class Print a where
+class Printable a where
     toString :: a -> String
 
-instance Print Judgement where
+instance Printable Judgement where
     toString (Judgement filename description pass reason) =
         passString ++ ": " ++ name ++ ": " ++ description ++ ": " ++ reason
         where passString = if (pass) then "PASS" else "FAIL"
               name = takeBaseName filename
 
 
-data TestSuite = Single Int
-               | All
+data TestSuite = All | Single Int
 
 type Timeout = Int
 data TestSpec = TestSpec Timeout FilePath TestSuite
@@ -42,12 +41,7 @@ type TestResult = Either String ResultString
 
 makeJudgement :: TestResult -> PoneTest String -> Judgement
 makeJudgement result (Test filename source description expectedValue) =
-    case result of
-        Left err -> judge False err
-        Right resValue ->
-            let eq = expectedValue == resValue in
-                judge eq ("expected " ++ expectedValue ++ " got " ++ resValue)
-
+    either (judge False) (\v -> judge (expectedValue == v) ("expected " ++ expectedValue ++ " got " ++ v)) result
     where judge = Judgement filename description
 
 loadTest :: String -> IO (PoneTest String)
@@ -61,6 +55,12 @@ loadTest filename = do
                   (x:y:xs) -> (unlines (reverse xs), drop 1 x, drop 1 y)
                   _ -> undefined
 
+appendError :: String -> Maybe a -> Either String a
+appendError msg v =
+    case v of
+        Just value -> Right value
+        Nothing -> Left msg
+
 tryWithTimeout :: String -> Timeout -> IO (Either String t) -> IO (Either String t)
 tryWithTimeout msg t proc = do
     result <- timeout (t*1000000) proc
@@ -69,10 +69,10 @@ tryWithTimeout msg t proc = do
         Nothing -> return $ Left msg
 
 
-
 runTest :: PoneTest String -> IO TestResult
 runTest (Test _ source _ _ )  = do
     result <- tryWithTimeout "Interpreter timeout" 3  (return (testSource source))
+    --liftM showAst result
     case result of
         Right ast -> return $ Right $ showAst ast
         Left err -> return $ Left err
@@ -85,8 +85,6 @@ getFiles :: TestSpec -> IO [String]
 getFiles (TestSpec t root All) = do
     files :: [String] <- (liftM . filter) isFile $ liftM reverse $ getDirectoryContents root
     return $ map (root ++) files
-
-
 getFiles (TestSpec t root (Single i)) = return $ [root ++ (intToFile i)]
 
 printResult :: (TestResult, PoneTest String) -> String
