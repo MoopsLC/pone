@@ -61,7 +61,7 @@ parseTypeId = try $ do { x <- upper
 getLoc :: Parser Location
 getLoc = do
     pos <- getPosition
-    return $ Location 1 1 ""--(sourceLine pos) (sourceColumn pos) (sourceName pos)
+    return $ Location (sourceLine pos) (sourceColumn pos) (sourceName pos)
 
 parseMain :: Parser (PoneProgram (Type Kind))
 parseMain = Program <$> (many parseGlobalDef) <*> parseExpr

@@ -13,3 +13,7 @@ isFile [] = False
 isFile ('.':[]) = False
 isFile ('.':'.':xs) = False
 isFile other = True
+
+maybeToEither :: Maybe a -> b -> Either b a
+maybeToEither Nothing y = Left y
+maybeToEither (Just x) y = Right x

@@ -50,20 +50,17 @@ loadTest filename = do
     let (source, desc, val) = splitTest contents in
         return $ Test filename source desc val
     where splitTest :: String -> (String, String, String)
-          splitTest source = let split = lines source in
+          splitTest source = let split = reverse $ lines source in
               case split of
                   (x:y:xs) -> (unlines (reverse xs), drop 1 x, drop 1 y)
-                  _ -> undefined
+                  _ -> error $ filename ++ "bad test format"
 
 appendError :: String -> Maybe a -> Either String a
-appendError msg v =
-    case v of
-        Just value -> Right value
-        Nothing -> Left msg
+appendError msg v = maybeToEither v msg
 
 tryWithTimeout :: String -> Timeout -> IO (Either String t) -> IO (Either String t)
 tryWithTimeout msg t proc = do
-    result <- timeout (t*1000000) proc
+    result :: Maybe (Either String t) <- timeout (t*1000000) proc
     case result of
         Just value -> return $ value
         Nothing -> return $ Left msg
@@ -72,10 +69,7 @@ tryWithTimeout msg t proc = do
 runTest :: PoneTest String -> IO TestResult
 runTest (Test _ source _ _ )  = do
     result <- tryWithTimeout "Interpreter timeout" 3  (return (testSource source))
-    --liftM showAst result
-    case result of
-        Right ast -> return $ Right $ showAst ast
-        Left err -> return $ Left err
+    return $ liftM showAst result
     where testSource :: String -> Either String (PoneProgram (Type Kind))
           testSource source = parsePone source
           showAst :: Show t => PoneProgram t -> String
@@ -94,9 +88,9 @@ intToFile :: Int -> String
 intToFile i = "test" ++ (take (length s) $ cycle "0") ++ s ++ ".pone"
               where s = show i
 
-runTestsAndPrint :: TestSpec -> IO ()
+runTestsAndPrint :: TestSpec -> IO [String]
 runTestsAndPrint spec = do
     files <- getFiles spec
     tests <- mapM loadTest files
     results <- mapM runTest tests
-    print $ map printResult (zip results tests)
+    return $ map printResult (zip results tests)
