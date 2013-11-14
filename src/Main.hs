@@ -1,5 +1,5 @@
 --import Pone.Testing
-import Pone.TypeParser
+import Pone.Parser.Type
 import Pone.Utils
 import System.IO
 import System.IO.Unsafe
@@ -18,6 +18,7 @@ input = [ ": t -> (m -> n) b as"
         , ": (a -> b) -> (c -> d) as"
         , ": (a b) -> (c d) as"
         , ": (a) -> b as"
+        , ": (d d n i b u -> (l -> j -> t -> t -> o) -> (u -> l -> a -> p) -> t z c s -> (p -> z -> g -> p) -> e l a t) as"
         --, ": s as"
         --, ": k t i as"
         --, ": s as"
@@ -30,16 +31,14 @@ input = [ ": t -> (m -> n) b as"
         --, ": (v -> o p n h y -> t -> y b i g i a (r -> y -> d -> o) z f j y h v j) as"
         ]
 
-printResult :: String -> String
-printResult s =
-    case parsePoneType s of
-        Left err -> err
-        Right ast -> show ast
+--printResult :: String -> String
+--printResult s =
+--    case parsePoneType s of
+--        Left err -> err
+--        Right ast -> show ast
 
-instance Arbitrary Program where
-    arbitrary = Program <$> (arbitrary :: Gen Type)
 
-instance Arbitrary Type where
+instance Arbitrary TypeRep where
     arbitrary = sized sizedType
 
 (<::>) :: a -> a -> [a] -> [a]
@@ -52,67 +51,64 @@ sizedType n | n > 0 =
               , (1, genApply)
               ]
   where sub = sizedType (n `div` 4)
-        genArrow = Arrow <$> ((<::>) <$> sub <*> sub <*> resize 4 (listOf1 (sub :: Gen Type)))
-        genApply = Apply <$> ((<::>) <$> sub <*> sub <*> resize 4 (listOf1 (sub :: Gen Type)))
+        genArrow = ArrowTR <$> ((<::>) <$> sub <*> sub <*> resize 4 (listOf1 (sub :: Gen TypeRep)))
+        genApply = ApplyTR <$> ((<::>) <$> sub <*> sub <*> resize 4 (listOf1 (sub :: Gen TypeRep)))
 sizedType _ = undefined
 
 arbitraryName :: Gen String
-arbitraryName = vectorOf 1 (elements "abcdefghijklmnopqrstuvwxyz")
+arbitraryName = vectorOf 1 (elements "abcdefghijklmnopqrstuvwxyzABCDEFG")
 
-genName :: Gen Type
-genName = Name <$> arbitraryName
+genName :: Gen TypeRep
+genName = NameTR <$> arbitraryName
 
 
-extractError :: Show a => Either String a -> String
-extractError (Left err) = err
-extractError (Right s) = show s
 
-checkProgram :: Program -> Bool
-checkProgram (Program t) = check t
 
-check :: Type -> Bool
-check (Name n) = False
-check (Apply xs) = any check xs
-check (Arrow xs) = any isApply xs || any check xs
+stripParens :: String -> String
+stripParens = stripOpen . stripClose
 
-isApply :: Type -> Bool
-isApply (Name n) = False
-isApply (Apply xs) = True
-isApply (Arrow xs) = False
+stripOpen :: String -> String
+stripOpen ('(':xs) = stripOpen xs
+stripOpen x = x
+
+stripClose :: String -> String
+stripClose x = case reverse x of
+    (')':xs) -> stripClose (reverse xs)
+    x -> reverse x
+
+
 
 quickTest = do
-    let input :: IO [Program] = sample' (arbitrary :: Gen Program)
-        strings :: IO [String] = liftM (map show) input
-        res :: IO [Either String Program] = liftM (map parsePoneType) strings
-        extracted :: IO [String] = liftM (map extractError) res in do
+    let input :: IO [TypeRep] = sample' (arbitrary :: Gen TypeRep)
+        strings :: IO [String] = liftM (map (\x -> printInline x (show x))) input
+        extracted :: IO [String] = liftM (map parsePoneType) strings in do
             e <- extracted
             putStrLn $ unlines  $ map (++ "\n") e
 
 
 --testList :: [String] -> IO String
-testList strings = do
-    let res :: IO [Either String Program] = liftM (map parsePoneType) strings
-        extracted :: IO [String] = liftM (map extractError) res in do
-            e <- extracted
-            putStrLn $ unlines  $ map (++ "\n") e
+testList strings =
+    let res :: IO [String] = liftM (map parsePoneType) strings in do
+        e <- res
+        putStrLn $ unlines  $ map (++ "\n") e
 
 --printThenEquals :: String -> String -> Bool
 --printThenEquals s t b =
 
-myTest :: Program -> Bool
-myTest prog =
-    let lhs :: String = (extractError $ parsePoneType $ show prog)
-        rhs :: String = show prog
+myTest :: TypeRep -> Bool
+myTest t =
+    let lhs :: String = stripParens (parsePoneType $ show t)
+        rhs :: String = stripParens (show t)
     in
         printInlineStr ("LHS: " ++ lhs ++ " \n" ++ "RHS: " ++ rhs) (lhs == rhs)
 
-propTrue :: Gen Program -> Property
+propTrue :: Gen TypeRep -> Property
 propTrue prog = forAll prog myTest
 --main :: IO ()
 main = do
     --testList $ return input
-    quickTest
-    --quickCheck $ propTrue (arbitrary :: Gen Program)
+    --quickTest
+    quickCheck $ propTrue (arbitrary :: Gen TypeRep)
     --let program = Program (Name "m") in
     --    let s :: String = (extractError $ parsePoneType $ show program) in do
     --        print s

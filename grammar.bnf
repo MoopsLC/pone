@@ -17,7 +17,7 @@
 
 <type-ctor> ::= <type-identifier> (<type-identifier> | <type-variable>)*
 
-<type-identifier> ::= '[A-Z*][a-zA-Z0-9*]*'
+<type-identifier> ::= '[A-Z][a-zA-Z0-9]*'
 
 <type-variable> ::= '[a-z][a-zA-Z0-9]*'
 
