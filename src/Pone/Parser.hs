@@ -40,6 +40,9 @@ spaceSep1 p = sepBy1 p m_whiteSpace
 comSep1 :: Parser t -> Parser [t]
 comSep1 p = sepBy1 p m_comma
 
+arrowSep1 :: Parser t -> Parser [t]
+arrowSep1 p = sepBy1 p (m_reserved "->")
+
 tryParseMany :: (Parser t -> Parser [t]) -> Parser t -> Parser [t]
 tryParseMany sep parser = try (sep parser) <|> return []
 
@@ -110,23 +113,63 @@ parseConstraint =
     Constraint <$> m_identifier
                <*> (m_reserved "<" *> parseType)
 
-parseTypeNoArrow :: Parser (Type Kind)
-parseTypeNoArrow = m_parens parseType
-                 <|> (TypeValue <$> (parseTypeId <|> m_identifier) <*> return UnknownK)
-
 parseType :: Parser (Type Kind)
-parseType = try(parseTypeArrow) <|> try(parseTypeApply) <|> parseTypeNoArrow
+parseType = m_parens parseType
+        <|> try parseTypeApply
+        <|> try parseTypeList
+        -- <|> ((listToArrow . ArrowList) <$> arrowSep1 parseType)
+        -- <|> (convert <$> (spaceSep1 parseType))
+        <|> parseCtor
 
-parseTypeNoApply :: Parser (Type Kind)
-parseTypeNoApply = TypeValue <$> (m_identifier <|> parseTypeId) <*> return UnknownK
-
-parseTypeArrow :: Parser (Type Kind)
-parseTypeArrow =
-    (listToArrow .: ArrowList) <$> (parseTypeNoArrow)
-                               <*> many (m_reserved "->" *> parseTypeNoArrow)
+parseCtor :: Parser (Type Kind)
+parseCtor = TypeValue <$> parseTypeName <*> return UnknownK
 
 parseTypeApply :: Parser (Type Kind)
-parseTypeApply = parseGenApply ProdT parseTypeNoApply
+parseTypeApply = do
+    x <- parseCtor
+    args <- spaceSep1 parseCtor
+    return $ (listToArrow . ArrowList) args
+
+parseTypeList :: Parser (Type Kind)
+parseTypeList = do
+    x <- ((m_parens parseType) <|> parseCtor)
+    args <- many (m_reserved "->" *> parseType)
+    return $ convert args
+    --case tok of
+    --  Just t -> (convert <$> x <*> (spaceSep1 parseType))
+    --  Nothing -> ((listToArrow . ArrowList) <$> x <*> arrowSep1 parseType)
+
+    --if tok is "->" we have a function type
+    --if tok is a word, we have type application
+    --otherwise, fail
+
+parseTypeName :: Parser String
+parseTypeName = (m_identifier <|> parseTypeId)
+
+convert :: [Type Kind] -> (Type Kind)
+convert xs = ((listToApply ProdT) . ApplyList) xs
+
+--parseTypeNoArrow :: Parser (Type Kind)
+--parseTypeNoArrow = (TypeValue <$> (parseTypeId <|> m_identifier) <*> return UnknownK)
+
+--parseType :: Parser (Type Kind)
+--parseType = m_parens parseType <|> try(parseTypeArrow) <|> try(parseTypeApply) <|> parseTypeNoArrow
+
+--parseTypeNoApply :: Parser (Type Kind)
+--parseTypeNoApply = TypeValue <$> (m_identifier <|> parseTypeId) <*> return UnknownK
+
+--parseTypeArrow :: Parser (Type Kind)
+--parseTypeArrow =
+--    (listToArrow .: ArrowList) <$> (parseTypeNoArrow)
+--                               <*> many (m_reserved "->" *> parseTypeNoArrow)
+
+--parseTypeApply :: Parser (Type Kind)
+--parseTypeApply =parseGenApply ProdT parseTypeNoApply
+    --((listToApply f) .: ApplyList) <$> parser <*> do { second <- parser
+    --                                                 ; rest <- try(many parser) <|> return []
+    --                                                 ; return $ (second:rest)
+    --                                                 }
+                                                     --
 
 parseImplementationDef :: Parser (GlobalDef (Type Kind))
 parseImplementationDef =
@@ -150,10 +193,12 @@ parseExpr = try(parseApply) <|> parseExprNoApply
 
 parseGenApply :: (t -> t -> t) -> Parser t -> Parser t
 parseGenApply f parser =
-    ((listToApply f) .: ApplyList) <$> parser <*> do { second <- parser
-                                                     ; rest <- many parser
-                                                     ; return $ (second:rest)
-                                                     }
+    ((listToApply f) . ApplyList) <$> do { first <- parser
+                                         ; second <- parser
+                                         ; rest <- try (many parser) <|> return []
+                                         ; return $ (first:second:rest)
+                                         }
+
 parseApply :: Parser (Expr (Type Kind))
 parseApply = parseGenApply Apply parseExprNoApply
 
