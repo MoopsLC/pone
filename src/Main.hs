@@ -82,7 +82,7 @@ isApply (Arrow xs) = False
 
 quickTest = do
     let input :: IO [Program] = sample' (arbitrary :: Gen Program)
-        strings :: IO [String] = liftM (map ((\x -> ": " ++ x ++ " as") . show)) input
+        strings :: IO [String] = liftM (map show) input
         res :: IO [Either String Program] = liftM (map parsePoneType) strings
         extracted :: IO [String] = liftM (map extractError) res in do
             e <- extracted
@@ -111,8 +111,8 @@ propTrue prog = forAll prog myTest
 --main :: IO ()
 main = do
     --testList $ return input
-    --quickTest
-    quickCheck $ propTrue (arbitrary :: Gen Program)
+    quickTest
+    --quickCheck $ propTrue (arbitrary :: Gen Program)
     --let program = Program (Name "m") in
     --    let s :: String = (extractError $ parsePoneType $ show program) in do
     --        print s

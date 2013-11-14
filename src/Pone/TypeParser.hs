@@ -61,20 +61,24 @@ parseTypeId :: Parser Type
 parseTypeId = Name <$> parseTypeName
 
 parseApply :: Parser Type
-parseApply = let look = lookAhead (m_reserved "as" <|> m_reserved "->" <|> m_reserved ")") in
-  let parseInner = m_parens parseType <|> parseTypeId in do
-    first <- parseInner
-    second <- parseType
-    rest <- try (manyTill parseType look) <|> return []
-    return $ Apply (first:second:rest)
+parseApply =
+  let ahead = lookAhead (m_reserved "as" <|> m_reserved "->" <|> m_reserved ")")
+      parseInner = parseType
+  in do
+      first <- (m_parens parseType <|> parseTypeId)
+      second <- parseInner
+      rest <- try (manyTill parseInner ahead) <|> return []
+      return $ Apply (first:second:rest)
 
 parseArrow :: Parser Type
-parseArrow = let look = lookAhead (m_reserved "as" <|> m_reserved ")") in
-  let parseInner = m_parens parseType <|> parseTypeId in do
-    first <- parseInner
-    second <- m_reserved "->" *> parseType
-    rest <- try (manyTill (m_reserved "->" *> parseType) look) <|> return []
-    return $ Arrow (first:second:rest)
+parseArrow =
+  let ahead = lookAhead (m_reserved "as" <|> m_reserved ")")
+      parseInner = (try parseApply <?> "apply") <|> parseNameOrType
+  in do
+      first <- (m_parens parseType <|> parseTypeId)
+      second <- m_reserved "->" *> parseInner
+      rest <- try (manyTill (m_reserved "->" *> parseInner) ahead) <|> return []
+      return $ Arrow (first:second:rest)
 
 parseNameOrType :: Parser Type
 parseNameOrType = (m_parens parseType <|> parseTypeId)
@@ -97,4 +101,4 @@ convertError (Left err) = Left $ show err
 convertError (Right prog) = Right prog
 
 parsePoneType :: String -> Either String Program
-parsePoneType src = printInline src $ convertError $ parse parseMain {-filename {-removed until i get pretty printing working-}-} "" src
+parsePoneType src = convertError $ parse parseMain {-filename {-removed until i get pretty printing working-}-} "" src
