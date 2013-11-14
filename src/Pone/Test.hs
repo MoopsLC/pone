@@ -1,4 +1,4 @@
-module Pone.Testing where
+module Pone.Test where
 
 import Control.Monad
 import System.Timeout
@@ -53,8 +53,6 @@ loadTest filename = do
     withFile filename ReadMode $ \h -> do
         hSetEncoding h utf8
         contents <- getUtf8 h
-
-        --contents <- readFile filename
         let (source, desc, val) = splitTest contents in
             return $ Test filename source desc val
         where splitTest :: String -> (String, String, String)
