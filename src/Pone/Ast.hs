@@ -4,20 +4,13 @@ import qualified Data.Map as Map
 
 import Pone.Pretty
 
---todo distinguish between type and *name* of a type
 type TypeCtorName = String
 type TypeVariable = String
-type TypeName = String -- TypeCtorName | TypeVariable
+type TypeName = String
 type IdentifierName = String
 
 data PoneProgram t = Program [GlobalDef t] (Expr t)
     deriving (Show)
-
-getExpr :: PoneProgram t -> Expr t
-getExpr (Program _ e) = e
-
-instance Pretty t => Pretty (PoneProgram t) where
-    pretty (Program defs expr) = (pretty defs) ++ "\n" ++ (pretty expr)
 
 data Location = Location Int    --line number
                          Int    --column
@@ -27,9 +20,6 @@ data Location = Location Int    --line number
 data CompoundType = CompoundType TypeCtorName --name
                                  [TypeName]   --type parameters
     deriving (Show)
-
-instance Pretty CompoundType where
-    pretty (CompoundType ctor names) = ctor ++ " " ++ (join " " names)
 
 data GlobalDef t = TypeDef TypeCtorName
                            [TypeVariable]
@@ -44,6 +34,72 @@ data GlobalDef t = TypeDef TypeCtorName
                                      [Definition t]
                  | DefSource Location (GlobalDef t)
     deriving (Show)
+
+data Definition t = Definition IdentifierName   --name
+                               [IdentifierName] --formal parameters
+                               t                --return type of the function
+                               [Constraint t]   --constraints on type
+                               (Maybe (Expr t)) --function body, if not abstract
+    deriving (Show)
+
+data Constraint t = Constraint TypeVariable t
+    deriving (Show)
+
+data Value = PoneInteger Integer
+           | PoneFloat Double
+           | PoneString String
+    deriving (Eq, Show)
+
+data PatternBranch t = Branch Pattern (Expr t)
+  deriving (Show)
+
+data Pattern = TypePattern CompoundType
+             | LiteralPattern Value
+             | IdentifierPattern String
+    deriving (Show)
+
+data Expr t = Identifier IdentifierName t
+            | Literal Value t
+            | PatternMatch (Expr t) [PatternBranch t]
+            | Lambda IdentifierName (Expr t)
+            | Apply (Expr t) (Expr t)
+            | LocalDefine (Definition t) (Expr t)
+            | Source Location (Expr t)
+    deriving (Show)
+
+data Type k = ProdT (Type k) (Type k)
+            | TypeValue TypeName k
+            | Arrow
+            | UnknownT
+    deriving (Show)
+
+data Kind = ArrowK Kind Kind
+          | Star
+          | UnknownK
+    deriving (Show)
+
+getExpr :: PoneProgram t -> Expr t
+getExpr (Program _ e) = e
+
+stripSource :: PoneProgram t -> PoneProgram t
+stripSource (Program defs expr) = Program defs $ stripExpr expr
+-- | remove source information
+stripExpr :: Expr t -> Expr t
+stripExpr expr = case expr of
+    Source loc e -> stripExpr e
+    e -> e
+
+data ApplyList t = ApplyList [t]
+
+listToApply :: (t -> t -> t)->  ApplyList t -> t
+listToApply f (ApplyList xs) = foldl1 f xs
+--a b c d === (Apply (Apply (Apply a b) c) d)
+
+instance Pretty t => Pretty (PoneProgram t) where
+    pretty (Program defs expr) = (pretty defs) ++ "\n" ++ (pretty expr)
+
+instance Pretty CompoundType where
+    pretty (CompoundType ctor names) = ctor ++ " " ++ (join " " names)
 
 printConstraints :: [Constraint t] -> String
 printConstraints [] = ""
@@ -82,13 +138,6 @@ instance Pretty t => Pretty (GlobalDef t) where
                  ]
     pretty (DefSource loc def) = pretty def
 
-data Definition t = Definition IdentifierName   --name
-                               [IdentifierName] --formal parameters
-                               t                --return type of the function
-                               [Constraint t]   --constraints on type
-                               (Maybe (Expr t)) --function body, if not abstract
-    deriving (Show)
-
 instance Pretty t => Pretty (Definition t) where
     pretty (Definition name params t constrs expr) =
         joinList [ "define "
@@ -103,56 +152,22 @@ instance Pretty t => Pretty (Definition t) where
                  , maybe "abstract\n" (\x -> "end\n") expr
                  ]
 
-data Constraint t = Constraint TypeVariable t
-    deriving (Show)
-
 instance Pretty (Constraint t) where
   pretty (Constraint var t) = var ++ " < fixme"
-
-data Value = PoneInteger Integer
-           | PoneFloat Double
-           | PoneString String
-    deriving (Eq, Show)
 
 instance Pretty Value where
     pretty (PoneInteger i) = show i
     pretty (PoneFloat f) = show f
     pretty (PoneString s) = show s
 
-data PatternBranch t = Branch Pattern (Expr t)
-  deriving (Show)
-
 instance Pretty t => Pretty (PatternBranch t) where
     pretty (Branch pat expr) = "| " ++ (pretty pat) ++ " -> " ++ (pretty expr) ++ "\n"
 
-
-data Pattern = TypePattern CompoundType
-             | LiteralPattern Value
-             | IdentifierPattern String
-    deriving (Show)
 
 instance Pretty Pattern where
     pretty (TypePattern t) = pretty t
     pretty (LiteralPattern v) = pretty v
     pretty (IdentifierPattern i) = i
-
-data Expr t = Identifier IdentifierName t
-            | Literal Value t
-            | PatternMatch (Expr t) [PatternBranch t]
-            | Lambda IdentifierName (Expr t)
-            | Apply (Expr t) (Expr t)
-            | LocalDefine (Definition t) (Expr t)
-            | Source Location (Expr t)
-    deriving (Show)
-
-stripSource :: PoneProgram t -> PoneProgram t
-stripSource (Program defs expr) = Program defs $ stripExpr expr
--- | remove source information
-stripExpr :: Expr t -> Expr t
-stripExpr expr = case expr of
-    Source loc e -> stripExpr e
-    e -> e
-
 
 instance Pretty t => Pretty (Expr t) where
     pretty (Lambda name expr) = "[λ " ++ name ++ " . " ++ (pretty expr) ++ "]"
@@ -164,29 +179,12 @@ instance Pretty t => Pretty (Expr t) where
     pretty (PatternMatch expr pats) =
         "match " ++ (pretty expr) ++ " with " ++ (pretty pats) ++ " end\n"
 
-data ApplyList t = ApplyList [t]
-
-listToApply :: (t -> t -> t)->  ApplyList t -> t
-listToApply f (ApplyList xs) = foldl1 f xs
---a b c d === (Apply (Apply (Apply a b) c) d)
-
-data Type k = ProdT (Type k) (Type k)
-            | TypeValue TypeName k
-            | Arrow
-            | UnknownT
-    deriving (Show)
-
 instance Pretty (Type k) where
     pretty (ProdT (ProdT Arrow t0) t1) = "(" ++ (pretty t0) ++ " -> " ++ (pretty t1) ++ ")"
     pretty (ProdT t0 t1) = "(" ++ (pretty t0) ++ " " ++ (pretty t1) ++ ")"
     pretty Arrow = "(->)"
     pretty UnknownT = "⊥"
     pretty (TypeValue string k) = string
-
-data Kind = ArrowK Kind Kind
-          | Star
-          | UnknownK
-    deriving (Show)
 
 instance Pretty Kind where
     pretty (ArrowK k0 k1) = (pretty k0) ++ " => " ++ (pretty k0)

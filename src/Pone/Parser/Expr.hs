@@ -193,4 +193,4 @@ printAst arg = case arg of
     Right ast -> trace ((pretty $ stripSource ast) ++ "\n") arg
 
 parsePone :: String -> String -> Either String (PoneProgram (Type Kind))
-parsePone filename src = convertError $ printAst  $ parse parseMain {-filename {-removed until i get pretty printing working-}-} "" src
+parsePone filename src = convertError $ printAst  $ parse parseMain filename src

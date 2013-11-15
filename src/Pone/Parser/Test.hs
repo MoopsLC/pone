@@ -6,7 +6,7 @@ import Test.QuickCheck
 instance Arbitrary TypeRep where
     arbitrary = sized sizedType
 
-
+sizedType :: Int -> Gen Type
 sizedType 0 = genName
 sizedType n | n > 0 =
     frequency [ (1, genArrow)
@@ -19,7 +19,7 @@ sizedType n | n > 0 =
 sizedType _ = undefined
 
 arbitraryName :: Gen String
-arbitraryName = vectorOf 1 (elements "abcdefghijklmnopqrstuvwxyzABCDEFG")
+arbitraryName = vectorOf 1 (elements "abcdefgABCDEFG")
 
 genName :: Gen TypeRep
 genName = NameTR <$> arbitraryName
@@ -35,7 +35,6 @@ stripClose :: String -> String
 stripClose x = case reverse x of
     (')':xs) -> stripClose (reverse xs)
     x -> reverse x
-
 
 myTest :: TypeRep -> Bool
 myTest t =

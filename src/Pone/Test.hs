@@ -22,14 +22,17 @@ data Judgement = Judgement String --filename
                            Bool   --pass or fail
                            String --reason
 
-class Printable a where
-    toString :: a -> String
+instance Pretty Judgement where
+    pretty (Judgement filename description pass reason) =
+        joinList [ if (pass) then "PASS" else "FAIL"
+                 , ": "
+                 , takeBaseName filename
+                 , ": "
+                 , description
+                 , ": "
+                 , reason
+                 ]
 
-instance Printable Judgement where
-    toString (Judgement filename description pass reason) =
-        passString ++ ": " ++ name ++ ": " ++ description ++ ": " ++ reason
-        where passString = if (pass) then "PASS" else "FAIL"
-              name = takeBaseName filename
 
 
 data TestSuite = All | Single Int
@@ -92,7 +95,7 @@ getFiles (TestSpec t root All) = do
 getFiles (TestSpec t root (Single i)) = return $ [root ++ (intToFile i)]
 
 printResult :: (TestResult, PoneTest String) -> String
-printResult (result, test) = toString $ makeJudgement result test
+printResult (result, test) = pretty $ makeJudgement result test
 
 intToFile :: Int -> String
 intToFile i = "test" ++ (take (4 - (length s)) $ cycle "0") ++ s ++ ".pone"

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-
-#cabal configure --enable-tests > /dev/null 
+#path to pone_src/
+test_dir="pone_src/"
+#cabal configure --enable-tests > /dev/null
 cabal build > /dev/null &&\
-./dist/build/Pone/Pone.exe
+./dist/build/Pone/Pone.exe "$test_dir"

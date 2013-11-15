@@ -8,6 +8,7 @@ import Text.Parsec.String
 import Pone.Ast
 import Pone.Parser.Common
 
+-- | temporary type representation. converted to Ast.Type in parseType
 data TypeRep = ApplyTR [TypeRep]
              | ArrowTR [TypeRep]
              | NameTR String
