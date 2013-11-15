@@ -14,6 +14,7 @@ import Pone.Utils ((.:))
 import Pone.Parser.Type (parseType, parseTypeCtor, parseTypeName)
 import Pone.Parser.Common
 import Pone.Pretty
+
 spaceSep1 :: Parser t -> Parser [t]
 spaceSep1 p = sepBy1 p whiteSpace
 
@@ -70,33 +71,28 @@ parseCompoundType =
 parseInterfaceDef :: Parser (GlobalDef (Type Kind)) =
     InterfaceDef <$> (reserved "interface" *> parseCompoundType)
                  <*> (try (reserved "extends" *> tryParseManyComma parseCompoundType) <|> return [])
-                 <*> (reserved "is" *> tryParseManySpace parseFunctionStatement <* reserved "end")
+                 <*> (reserved "is" *> tryParseManySpace (parseDefinition parseDefinitionBodyEnd) <* reserved "end")
 
---todo CODE CLONES
-parseFunctionStatement :: Parser (Definition (Type Kind))
-parseFunctionStatement =
+parseDefinitionBodyEnd :: Parser (Maybe (Expr (Type Kind)))
+parseDefinitionBodyEnd = (reserved "as" *> (Just <$> parseExpr <* reserved "end"))
+                  <|> (reserved "abstract" *> return Nothing)
+
+parseDefinitionBody :: Parser (Maybe (Expr (Type Kind)))
+parseDefinitionBody = (reserved "as" *> (Just <$> parseExpr))
+                   <|> (reserved "abstract" *> return Nothing)
+
+parseDefinition :: Parser (Maybe (Expr (Type Kind))) -> Parser (Definition (Type Kind))
+parseDefinition exprP =
     Definition <$> (reserved "define" *> identifier)
                <*> tryParseManySpace identifier
                <*> (reserved ":" *> parseType)
                <*> (try (reserved "where" *> parens (tryParseManyComma parseConstraint)) <|> return [])
-               <*> (    (reserved "as" *> (Just <$> parseExpr <* reserved "end"))
-                    <|> (reserved "abstract" *> return Nothing))
-
-parseDefinition :: Parser (Definition (Type Kind))
-parseDefinition =
-    Definition <$> (reserved "define" *> identifier)
-               <*> tryParseManySpace identifier
-               <*> (reserved ":" *> parseType)
-               <*> (try (reserved "where" *> parens (tryParseManyComma parseConstraint)) <|> return [])
-               <*> (    (reserved "as" *> (Just <$> parseExpr))
-                    <|> (reserved "abstract" *> return Nothing))
+               <*> exprP
 
 
-
---fixme -- too permissive, local definitions cannot be abstract
 parseLocalDefinition :: Parser (Expr (Type Kind))
 parseLocalDefinition =
-    LocalDefine <$> parseDefinition <*> (reserved "in" *> parseExpr)
+    LocalDefine <$> (parseDefinition parseDefinitionBody) <*> (reserved "in" *> parseExpr)
 
 parseConstraint :: Parser (Constraint (Type Kind))
 parseConstraint =
@@ -109,11 +105,11 @@ parseImplementationDef =
     ImplementationDef <$> (reserved "implement" *> parseCompoundType)
                       <*> (reserved "for" *> parseCompoundType)
                       <*> (try (reserved "where" *> parens (tryParseManyComma parseConstraint)) <|> return [])
-                      <*> (reserved "as" *> tryParseManySpace (parseDefinition <* reserved "end") <* reserved "end")
+                      <*> (reserved "as" *> tryParseManySpace ((parseDefinition parseDefinitionBody) <* reserved "end") <* reserved "end")
 
 parseGlobalFunction :: Parser (GlobalDef (Type Kind))
 parseGlobalFunction =
-    GlobalFunction <$> (parseDefinition <* reserved "end")
+    GlobalFunction <$> ((parseDefinition parseDefinitionBody) <* reserved "end")
 
 parseExprNoApply :: Parser (Expr (Type Kind))
 parseExprNoApply =
