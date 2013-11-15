@@ -162,8 +162,8 @@ parseLiteral :: Parser (Expr (Type Kind))
 parseLiteral = Literal <$> parseValue <*> return UnknownT
 
 parseValue :: Parser Value
-parseValue = choice [ parseInteger
-                    , parseFloat
+parseValue = choice [ try(parseFloat)
+                    , parseInteger
                     , parseString
                     ]
 

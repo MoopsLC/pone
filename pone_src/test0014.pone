@@ -3,4 +3,4 @@ define sepNewline s t : String -> String -> String as
 end
 0
 ;0
-;y string literal test
+;string literal test

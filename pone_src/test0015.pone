@@ -1,0 +1,7 @@
+define intDivide2 i : Int -> Float as
+    define fi : Float as toFloat i in
+    (native_div fi 2.0)
+end
+0.1
+;0.1
+;float literal test
