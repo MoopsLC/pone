@@ -38,11 +38,11 @@ implement Monoid for Int as
     end
 end
 
-implement Monoid for * a a where (a < Monoid) as
-    define add x y: (* a a) -> (* a a) -> (* a a)
+implement Monoid for Product a a where (a < Monoid) as
+    define add x y: (Product a a) -> (Product a a) -> (Product a a)
         define z0 as (add (fst x) (fst y)) in
         define z1 as (add (snd x) (snd y)) in
-        * z0 z1
+        Product z0 z1
     end
 end
 
@@ -56,8 +56,8 @@ type List a is
     | Cons a List
 end
 
-type * a b is
-    | * a b
+type Product a b is
+    | Product a b
 end
 
 define double x : (a -> a) as
@@ -68,23 +68,23 @@ define flip f : (a -> c -> b) -> (b -> a -> c) as
     [λ x . [λ y . f y x]]
 end
 
-define fst t: (* a b) -> a as
+define fst t: (Product a b) -> a as
     match t with
-    | * x y -> x
+    | Product x y -> x
     end
 end
 
-define snd t: * a b -> b as
+define snd t: Product a b -> b as
     match t with
-    | * x y -> y
+    | Product x y -> y
     end
 end
 
-define add ass bss : * a a -> * b b -> * a b
+define add ass bss : Product a a -> Product b b -> Product a b
 where (a < Monoid, b < Monoid) as
     define a1 as (add (fst ass) (snd ass)) in
     define b1 as (add (fst bss) (fst bss)) in
-    * a1 b1
+    Product a1 b1
 end
 
 define fact a : Int -> Int as
