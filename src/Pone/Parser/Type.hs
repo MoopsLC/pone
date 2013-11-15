@@ -56,8 +56,8 @@ testType :: String -> String
 testType src = extractError $ convertError $ parse parseTypeRep "" src
 
 toType :: TypeRep -> (Type Kind)
-toType (ApplyTR ts) = foldl1 ProdT (map toType ts)
-toType (ArrowTR ts) = foldl1 (\x acc -> ProdT (ProdT Arrow acc) x) (map toType ts)
+toType (ApplyTR ts) = foldr1 ProdT (map toType ts)
+toType (ArrowTR ts) = foldr1 (\x acc -> ProdT (ProdT Arrow x) acc) (map toType ts)
 toType (NameTR n) = TypeValue n UnknownK
 
 parseType :: Parser (Type Kind)
