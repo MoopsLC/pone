@@ -1,0 +1,6 @@
+define sepNewline s t : String -> String -> String as
+    (append (append s ", ") t)
+end
+0
+;0
+;y string literal test

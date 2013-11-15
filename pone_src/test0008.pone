@@ -1,5 +1,5 @@
 define get10 : Integer as
-    &: this is a comment so it shouldnt complain :&
+    >--{ this is a comment so the parser shouldnt complain }--<
     10
 end
 0

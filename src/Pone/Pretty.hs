@@ -5,17 +5,17 @@ class Pretty a where
 
 instance Pretty a => Pretty ([] a) where
   pretty [] = "[]"
-  pretty (x:xs) =
-      "[" ++ (foldr (\x acc -> (pretty x) ++ ", " ++ acc) (pretty x) xs) ++ "]"
+  pretty xs = joinPretty "\n" xs
+      --"" ++ (foldr (\x acc -> (pretty x) ++ acc) (pretty x) xs) ++ ""
 
 joinList :: [String] -> String
 joinList [] = ""
-joinList (x:xs) = foldr (++) x xs
+joinList xs = foldr (\x acc -> x ++  acc) "" xs
 
 join :: String -> [String] -> String
 join sep [] = ""
-join sep (x:xs) = foldr (\x acc -> x ++ sep ++ acc) x xs
+join sep xs = foldr (\x acc -> x ++ sep ++ acc) "" xs
 
 joinPretty :: Pretty a => String -> [a] -> String
 joinPretty sep [] = ""
-joinPretty sep (x:xs) = foldr (\x acc -> (pretty x) ++ sep ++ acc) (pretty x) xs
+joinPretty sep xs = foldr (\x acc -> (pretty x) ++ sep ++ acc) "" xs

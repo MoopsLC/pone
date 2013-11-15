@@ -9,6 +9,7 @@ module Pone.Parser.Common
 , integer
 , float
 , comma
+, stringLiteral
 ) where
 
 import Data.Functor.Identity
@@ -43,18 +44,19 @@ lexer  =
   P.makeTokenParser $ emptyDef { P.reservedNames = reservedWords
                                , P.caseSensitive = True
                                , P.identStart = lower
-                               , P.commentStart = "&:"
-                               , P.commentEnd = ":&"
+                               , P.commentStart = ">--{"
+                               , P.commentEnd = "}--<"
                                , P.commentLine = ";"
                                --, P.identLetter = alphaNum
                                }
 
-parens     = P.parens lexer
-brackets   = P.brackets lexer
-identifier = P.identifier lexer
-lexeme     = P.lexeme lexer
-whiteSpace = P.whiteSpace lexer
-reserved   = P.reserved lexer
-integer    = P.integer lexer
-float      = P.float lexer
-comma      = P.comma lexer
+parens        = P.parens lexer
+brackets      = P.brackets lexer
+identifier    = P.identifier lexer
+lexeme        = P.lexeme lexer
+whiteSpace    = P.whiteSpace lexer
+reserved      = P.reserved lexer
+integer       = P.integer lexer
+float         = P.float lexer
+comma         = P.comma lexer
+stringLiteral = P.stringLiteral lexer

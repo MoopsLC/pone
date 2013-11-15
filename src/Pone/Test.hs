@@ -54,13 +54,16 @@ loadTest filename = do
     withFile filename ReadMode $ \h -> do
         hSetEncoding h utf8
         contents <- getUtf8 h
-        let (source, desc, val) = splitTest contents in
+        let (source, desc, val) = verifyTestCase filename (reverse $ lines contents) in
             return $ Test filename source desc val
-        where splitTest :: String -> (String, String, String)
-              splitTest source = let split = reverse $ lines source in
-                  case split of
-                      (x:y:xs) -> (unlines (reverse xs), drop 1 x, drop 1 y)
-                      _ -> error $ filename ++ "bad test format"
+
+failLoad filename = error $ filename ++ ": bad test format"
+
+verifyTestCase :: String -> [String] -> (String, String, String)
+verifyTestCase file (x:y:xs) = case (x, y) of
+    ((';':_), (';':_)) -> (unlines (reverse xs), drop 1 x, drop 1 y)
+    _ -> failLoad file
+verifyTestCase file _ = failLoad file
 
 appendError :: String -> Maybe a -> Either String a
 appendError msg v = maybeToEither v msg

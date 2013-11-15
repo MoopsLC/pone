@@ -163,7 +163,18 @@ parseLiteral = Literal <$> parseValue <*> return UnknownT
 
 parseValue :: Parser Value
 parseValue = choice [ parseInteger
+                    , parseFloat
+                    , parseString
                     ]
+
+parseInteger :: Parser Value
+parseInteger = PoneInteger <$> integer
+
+parseFloat :: Parser Value
+parseFloat = PoneFloat <$> float
+
+parseString :: Parser Value
+parseString = PoneString <$> stringLiteral
 
 parseIdentifier :: Parser (Expr (Type Kind))
 parseIdentifier = Identifier <$> (identifier <|> parseTypeCtor) <*> return UnknownT
@@ -172,17 +183,14 @@ parseLambda :: Parser (Expr (Type Kind))
 parseLambda = Lambda <$> (reserved "λ" *> identifier)
                      <*> (reserved "." *> parseExpr)
 
-parseInteger :: Parser Value
-parseInteger = PoneInteger <$> integer
-
 convertError :: Either ParseError (PoneProgram t) -> Either String (PoneProgram t)
 convertError (Left err) = Left $ show err
 convertError (Right prog) = Right prog
 
-printAst :: Pretty b => Either a b -> Either a b
+printAst :: Pretty t => Either a (PoneProgram t) -> Either a (PoneProgram t)
 printAst arg = case arg of
     Left err -> arg
-    Right ast -> trace ((pretty ast) ++ "\n") arg
+    Right ast -> trace ((pretty $ stripSource ast) ++ "\n") arg
 
 parsePone :: String -> String -> Either String (PoneProgram (Type Kind))
 parsePone filename src = convertError $ printAst  $ parse parseMain {-filename {-removed until i get pretty printing working-}-} "" src

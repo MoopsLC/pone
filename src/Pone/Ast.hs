@@ -4,9 +4,7 @@ import qualified Data.Map as Map
 
 import Pone.Pretty
 
-
-
---distinguish between type and *name* of a type
+--todo distinguish between type and *name* of a type
 type TypeCtorName = String
 type TypeVariable = String
 type TypeName = String -- TypeCtorName | TypeVariable
@@ -18,7 +16,7 @@ data PoneProgram t = Program [GlobalDef t] (Expr t)
 getExpr :: PoneProgram t -> Expr t
 getExpr (Program _ e) = e
 
-instance Pretty (PoneProgram (Type Kind)) where
+instance Pretty t => Pretty (PoneProgram t) where
     pretty (Program defs expr) = (pretty defs) ++ "\n" ++ (pretty expr)
 
 data Location = Location Int    --line number
@@ -51,20 +49,20 @@ printConstraints :: [Constraint t] -> String
 printConstraints [] = ""
 printConstraints xs = joinList [" where (", (joinPretty ", " xs), ")"]
 
-instance Pretty (GlobalDef t) where
+instance Pretty t => Pretty (GlobalDef t) where
     pretty (TypeDef ctor names ts) =
         joinList [ "type "
                  , ctor
                  , " "
                  , join " " names
                  , " is "
-                 , joinPretty " " ts
+                 , joinPretty "| " ts
                  ]
     pretty (InterfaceDef name inhs defs) =
         joinList [ "interface "
                  , pretty name
                  , pinhs
-                 , " is "
+                 , "is \n"
                  , pretty defs
                  , " end\n"
                  ]
@@ -91,12 +89,15 @@ data Definition t = Definition IdentifierName   --name
                                (Maybe (Expr t)) --function body, if not abstract
     deriving (Show)
 
-instance Pretty (Definition t) where
+instance Pretty t => Pretty (Definition t) where
     pretty (Definition name params t constrs expr) =
         joinList [ "define "
                  , name
+                 , " "
                  , join " " params
                  , " : "
+                 , pretty t
+                 , " as "
                  , printConstraints constrs
                  , maybe "" pretty expr
                  , maybe "abstract\n" (\x -> "end\n") expr
@@ -121,7 +122,7 @@ instance Pretty Value where
 data PatternBranch t = Branch Pattern (Expr t)
   deriving (Show)
 
-instance Pretty (PatternBranch t) where
+instance Pretty t => Pretty (PatternBranch t) where
     pretty (Branch pat expr) = "| " ++ (pretty pat) ++ " -> " ++ (pretty expr) ++ "\n"
 
 
@@ -144,14 +145,16 @@ data Expr t = Identifier IdentifierName t
             | Source Location (Expr t)
     deriving (Show)
 
+stripSource :: PoneProgram t -> PoneProgram t
+stripSource (Program defs expr) = Program defs $ stripExpr expr
 -- | remove source information
-flatten :: Expr t -> Expr t
-flatten expr = case expr of
-    Source loc e -> flatten e
-    e -> flatten e
+stripExpr :: Expr t -> Expr t
+stripExpr expr = case expr of
+    Source loc e -> stripExpr e
+    e -> e
 
 
-instance Pretty (Expr t) where
+instance Pretty t => Pretty (Expr t) where
     pretty (Lambda name expr) = "[λ " ++ name ++ " . " ++ (pretty expr) ++ "]"
     pretty (Apply e0 e1) = (pretty e0) ++ " " ++ (pretty e1)
     pretty (Source loc expr) = pretty expr
@@ -174,6 +177,7 @@ data Type k = ProdT (Type k) (Type k)
     deriving (Show)
 
 instance Pretty (Type k) where
+    pretty (ProdT (ProdT Arrow t0) t1) = "(" ++ (pretty t0) ++ " -> " ++ (pretty t1) ++ ")"
     pretty (ProdT t0 t1) = "(" ++ (pretty t0) ++ " " ++ (pretty t1) ++ ")"
     pretty Arrow = "(->)"
     pretty UnknownT = "⊥"
