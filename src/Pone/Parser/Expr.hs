@@ -13,7 +13,7 @@ import Pone.Ast
 import Pone.Utils ((.:))
 import Pone.Parser.Type (parseType, parseTypeCtor, parseTypeName)
 import Pone.Parser.Common
-
+import Pone.Pretty
 spaceSep1 :: Parser t -> Parser [t]
 spaceSep1 p = sepBy1 p whiteSpace
 
@@ -179,10 +179,10 @@ convertError :: Either ParseError (PoneProgram t) -> Either String (PoneProgram 
 convertError (Left err) = Left $ show err
 convertError (Right prog) = Right prog
 
-printAst :: Show b => Either a b -> Either a b
+printAst :: Pretty b => Either a b -> Either a b
 printAst arg = case arg of
     Left err -> arg
-    Right ast -> trace (show ast) arg
+    Right ast -> trace ((pretty ast) ++ "\n") arg
 
 parsePone :: String -> String -> Either String (PoneProgram (Type Kind))
 parsePone filename src = convertError $ printAst  $ parse parseMain {-filename {-removed until i get pretty printing working-}-} "" src

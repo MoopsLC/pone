@@ -2,6 +2,10 @@ module Pone.Ast where
 
 import qualified Data.Map as Map
 
+import Pone.Pretty
+
+
+
 --distinguish between type and *name* of a type
 type TypeCtorName = String
 type TypeVariable = String
@@ -9,15 +13,13 @@ type TypeName = String -- TypeCtorName | TypeVariable
 type IdentifierName = String
 
 data PoneProgram t = Program [GlobalDef t] (Expr t)
+    deriving (Show)
 
 getExpr :: PoneProgram t -> Expr t
 getExpr (Program _ e) = e
 
-class Pretty a where
-    pretty :: a -> String
-
-instance Show (PoneProgram (Type Kind)) where
-    show (Program defs expr) = "Program: " ++ (show defs) ++ (show expr)
+instance Pretty (PoneProgram (Type Kind)) where
+    pretty (Program defs expr) = (pretty defs) ++ "\n" ++ (pretty expr)
 
 data Location = Location Int    --line number
                          Int    --column
@@ -27,6 +29,9 @@ data Location = Location Int    --line number
 data CompoundType = CompoundType TypeCtorName --name
                                  [TypeName]   --type parameters
     deriving (Show)
+
+instance Pretty CompoundType where
+    pretty (CompoundType ctor names) = ctor ++ " " ++ (join " " names)
 
 data GlobalDef t = TypeDef TypeCtorName
                            [TypeVariable]
@@ -42,6 +47,43 @@ data GlobalDef t = TypeDef TypeCtorName
                  | DefSource Location (GlobalDef t)
     deriving (Show)
 
+printConstraints :: [Constraint t] -> String
+printConstraints [] = ""
+printConstraints xs = joinList [" where (", (joinPretty ", " xs), ")"]
+
+instance Pretty (GlobalDef t) where
+    pretty (TypeDef ctor names ts) =
+        joinList [ "type "
+                 , ctor
+                 , " "
+                 , join " " names
+                 , " is "
+                 , joinPretty " " ts
+                 ]
+    pretty (InterfaceDef name inhs defs) =
+        joinList [ "interface "
+                 , pretty name
+                 , pinhs
+                 , " is "
+                 , pretty defs
+                 , " end\n"
+                 ]
+        where pinhs = case inhs of
+                          [] -> ""
+                          xs -> joinList [ " extends ", (joinPretty ", " xs)]
+    pretty (GlobalFunction def) = pretty def
+    pretty (ImplementationDef name inh constrs defs) =
+        joinList [ "implement "
+                 , pretty name
+                 , " for "
+                 , pretty inh
+                 , printConstraints constrs
+                 , " as "
+                 , pretty defs
+                 , " end\n"
+                 ]
+    pretty (DefSource loc def) = pretty def
+
 data Definition t = Definition IdentifierName   --name
                                [IdentifierName] --formal parameters
                                t                --return type of the function
@@ -49,26 +91,49 @@ data Definition t = Definition IdentifierName   --name
                                (Maybe (Expr t)) --function body, if not abstract
     deriving (Show)
 
+instance Pretty (Definition t) where
+    pretty (Definition name params t constrs expr) =
+        joinList [ "define "
+                 , name
+                 , join " " params
+                 , " : "
+                 , printConstraints constrs
+                 , maybe "" pretty expr
+                 , maybe "abstract\n" (\x -> "end\n") expr
+                 ]
+
 data Constraint t = Constraint TypeVariable t
     deriving (Show)
+
+instance Pretty (Constraint t) where
+  pretty (Constraint var t) = var ++ " < fixme"
 
 data Value = PoneInteger Integer
            | PoneFloat Double
            | PoneString String
-    deriving (Eq)
+    deriving (Eq, Show)
 
-instance Show Value where
-    show (PoneInteger i) = show i
-    show (PoneFloat f) = show f
-    show (PoneString s) = show s
+instance Pretty Value where
+    pretty (PoneInteger i) = show i
+    pretty (PoneFloat f) = show f
+    pretty (PoneString s) = show s
 
 data PatternBranch t = Branch Pattern (Expr t)
   deriving (Show)
+
+instance Pretty (PatternBranch t) where
+    pretty (Branch pat expr) = "| " ++ (pretty pat) ++ " -> " ++ (pretty expr) ++ "\n"
+
 
 data Pattern = TypePattern CompoundType
              | LiteralPattern Value
              | IdentifierPattern String
     deriving (Show)
+
+instance Pretty Pattern where
+    pretty (TypePattern t) = pretty t
+    pretty (LiteralPattern v) = pretty v
+    pretty (IdentifierPattern i) = i
 
 data Expr t = Identifier IdentifierName t
             | Literal Value t
@@ -77,16 +142,24 @@ data Expr t = Identifier IdentifierName t
             | Apply (Expr t) (Expr t)
             | LocalDefine (Definition t) (Expr t)
             | Source Location (Expr t)
+    deriving (Show)
 
-instance Show (Expr t) where
-    show (Lambda name expr) = "[λ " ++ name ++ " . " ++ (show expr) ++ "]"
-    show (Apply e0 e1) = (show e0) ++ " " ++ (show e1)
-    show (Source loc expr) = show expr
-    show (Literal v t') = show v
-    show (LocalDefine def expr) = "todo"
-    show (Identifier id' t') = id'
-    show (PatternMatch expr pats) =
-        "match " ++ (show expr) ++ " with " ++ (show pats) ++ " end"
+-- | remove source information
+flatten :: Expr t -> Expr t
+flatten expr = case expr of
+    Source loc e -> flatten e
+    e -> flatten e
+
+
+instance Pretty (Expr t) where
+    pretty (Lambda name expr) = "[λ " ++ name ++ " . " ++ (pretty expr) ++ "]"
+    pretty (Apply e0 e1) = (pretty e0) ++ " " ++ (pretty e1)
+    pretty (Source loc expr) = pretty expr
+    pretty (Literal v t') = pretty v
+    pretty (LocalDefine def expr) = pretty def ++ " in " ++ (pretty expr) ++ "\n"
+    pretty (Identifier id' t') = id'
+    pretty (PatternMatch expr pats) =
+        "match " ++ (pretty expr) ++ " with " ++ (pretty pats) ++ " end\n"
 
 data ApplyList t = ApplyList [t]
 
@@ -98,14 +171,20 @@ data Type k = ProdT (Type k) (Type k)
             | TypeValue TypeName k
             | Arrow
             | UnknownT
+    deriving (Show)
 
-instance Show (Type k) where
-  show (ProdT t0 t1) = "(" ++ (show t0) ++ " " ++ (show t1) ++ ")"
-  show Arrow = "(->)"
-  show UnknownT = "⊥"
-  show (TypeValue string k) = string
+instance Pretty (Type k) where
+    pretty (ProdT t0 t1) = "(" ++ (pretty t0) ++ " " ++ (pretty t1) ++ ")"
+    pretty Arrow = "(->)"
+    pretty UnknownT = "⊥"
+    pretty (TypeValue string k) = string
 
-data Kind = ProdK Kind Kind
+data Kind = ArrowK Kind Kind
           | Star
           | UnknownK
     deriving (Show)
+
+instance Pretty Kind where
+    pretty (ArrowK k0 k1) = (pretty k0) ++ " => " ++ (pretty k0)
+    pretty Star = "•"
+    pretty UnknownK = "¿"

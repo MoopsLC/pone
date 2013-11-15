@@ -10,6 +10,7 @@ import Debug.Trace
 import Pone.Utils
 import Pone.Parser.Expr
 import Pone.Ast
+import Pone.Pretty
 
 data PoneTest t = Test String --filename
                        String --source
@@ -79,7 +80,7 @@ runTest (Test filename source _ _ )  = do
     where testSource :: String -> String -> Either String (PoneProgram (Type Kind))
           testSource filename source = parsePone filename source
           showAst :: PoneProgram (Type Kind) -> String
-          showAst ast = show (getExpr ast)
+          showAst ast = pretty (getExpr ast)
 
 getFiles :: TestSpec -> IO [String]
 getFiles (TestSpec t root All) = do
