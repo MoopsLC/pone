@@ -29,7 +29,6 @@ reduce (ArrowTR xs) = if (length xs == 1)
     then head xs
     else ArrowTR xs
 
-
 parseTypeRep :: Parser TypeRep
 parseTypeRep = ArrowTR <$> parseArrow
 
@@ -61,8 +60,5 @@ toType (ApplyTR ts) = foldl1 ProdT (map toType ts)
 toType (ArrowTR ts) = foldl1 (\x acc -> ProdT (ProdT Arrow acc) x) (map toType ts)
 toType (NameTR n) = TypeValue n UnknownK
 
---data TypeRep = ApplyTR [TypeRep]
---             | ArrowTR [TypeRep]
---             | NameTR String
 parseType :: Parser (Type Kind)
 parseType = toType <$> parseTypeRep

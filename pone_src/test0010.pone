@@ -1,0 +1,13 @@
+
+implement Monad for List as
+    define flatMap f list : (a -> List b) -> List a -> List b as
+        join (map f list)
+    end
+    define join x : List (List a) -> List a as
+        flatten x
+    end
+end
+
+0
+;0
+;leading file whitespace

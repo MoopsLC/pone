@@ -82,8 +82,8 @@ end
 
 define add ass bss : Product a a -> Product b b -> Product a b
 where (a < Monoid, b < Monoid) as
-    define a1 as (add (fst ass) (snd ass)) in
-    define b1 as (add (fst bss) (fst bss)) in
+    define a1 : a as (add (fst ass) (snd ass)) in
+    define b1 : a as (add (fst bss) (fst bss)) in
     Product a1 b1
 end
 
@@ -96,3 +96,7 @@ define fact a : Int -> Int as
     in
     factHelper
 end
+
+0
+;0
+;everything

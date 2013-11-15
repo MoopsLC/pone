@@ -1,0 +1,9 @@
+define fst t: (Product a b) -> a as
+    match t with
+    | Product x y -> x
+    end
+end
+
+0
+;0
+;simple pattern match

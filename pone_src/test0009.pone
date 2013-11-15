@@ -1,0 +1,8 @@
+implement Monoid for Int as
+    define add : Int -> Int -> Int as
+        native_add
+    end
+end
+0
+;0
+;interface implementation

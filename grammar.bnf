@@ -62,6 +62,8 @@
 
 <pattern-match> ::= "match" <expr> "with" (<pattern-branch>)* "end"
 
-<pattern-branch> ::= "|" <type-identifier> (<type>)* "->" <expr>
+<pattern-branch> ::= "|" <pattern> "->" <expr>
+
+<pattern> ::= <type-identifier> (<type>)* | <literal> | <identifier>
 
 <function-application> ::= <expr-no-apply> (<expr-no-apply>)+

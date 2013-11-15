@@ -1,0 +1,12 @@
+implement Monoid for Product a a where (a < Monoid) as
+    define add x y: (Product a a) -> (Product a a) -> (Product a a) as
+        define z0 : a as (add (fst x) (fst y)) in
+        define z1 : a as (add (snd x) (snd y)) in
+        Product z0 z1
+    end
+end
+
+
+0
+;0
+;compound type in interface impl

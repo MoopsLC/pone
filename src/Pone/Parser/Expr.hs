@@ -41,14 +41,14 @@ getLoc = do
     return $ Location (sourceLine pos) (sourceColumn pos) (sourceName pos)
 
 parseMain :: Parser (PoneProgram (Type Kind))
-parseMain = Program <$> (many parseGlobalDef) <*> parseExpr
+parseMain = Program <$> (whiteSpace *> (many parseGlobalDef)) <*> parseExpr
 
 parseGlobalDef :: Parser (GlobalDef (Type Kind))
 parseGlobalDef =
       DefSource <$> getLoc <*> choice [ parseTypeDef
                                       , parseInterfaceDef
                                       , parseGlobalFunction
-                                      -- , parseImplementationDef
+                                      , parseImplementationDef
                                       ]
 
 parseTypeDef :: Parser (GlobalDef t)
@@ -57,21 +57,30 @@ parseTypeDef =
             <*> (tryParseManySpace identifier)
             <*> (reserved "is" *> parseTypeDefList <* reserved "end")
 
-parseTypeDefList :: Parser [TypeCtor]
+parseTypeDefList :: Parser [CompoundType]
 parseTypeDefList =
     tryParseManySpace (reserved "|" *> parseCompoundType)
 
-parseCompoundType :: Parser TypeCtor
+parseCompoundType :: Parser CompoundType
 parseCompoundType =
-    TypeCtor <$> parseTypeCtor
-             <*> tryParseManySpace (parseTypeCtor <|> identifier)
+    CompoundType <$> parseTypeCtor
+                 <*> tryParseManySpace (parseTypeCtor <|> identifier)
 
 
 parseInterfaceDef :: Parser (GlobalDef (Type Kind)) =
     InterfaceDef <$> (reserved "interface" *> parseCompoundType)
                  <*> (try (reserved "extends" *> tryParseManyComma parseCompoundType) <|> return [])
-                 <*> (reserved "is" *> tryParseManySpace parseDefinition <* reserved "end")
+                 <*> (reserved "is" *> tryParseManySpace parseFunctionStatement <* reserved "end")
 
+--todo CODE CLONES
+parseFunctionStatement :: Parser (Definition (Type Kind))
+parseFunctionStatement =
+    Definition <$> (reserved "define" *> identifier)
+               <*> tryParseManySpace identifier
+               <*> (reserved ":" *> parseType)
+               <*> (try (reserved "where" *> parens (tryParseManyComma parseConstraint)) <|> return [])
+               <*> (    (reserved "as" *> (Just <$> parseExpr <* reserved "end"))
+                    <|> (reserved "abstract" *> return Nothing))
 
 parseDefinition :: Parser (Definition (Type Kind))
 parseDefinition =
@@ -81,6 +90,8 @@ parseDefinition =
                <*> (try (reserved "where" *> parens (tryParseManyComma parseConstraint)) <|> return [])
                <*> (    (reserved "as" *> (Just <$> parseExpr))
                     <|> (reserved "abstract" *> return Nothing))
+
+
 
 --fixme -- too permissive, local definitions cannot be abstract
 parseLocalDefinition :: Parser (Expr (Type Kind))
@@ -95,9 +106,10 @@ parseConstraint =
 
 parseImplementationDef :: Parser (GlobalDef (Type Kind))
 parseImplementationDef =
-    ImplementationDef <$> (reserved "implement" *> parseTypeCtor)
-                      <*> (reserved "for" *> parseTypeCtor)
-                      <*> (reserved "as" *> tryParseManySpace parseDefinition <* reserved "end")
+    ImplementationDef <$> (reserved "implement" *> parseCompoundType)
+                      <*> (reserved "for" *> parseCompoundType)
+                      <*> (try (reserved "where" *> parens (tryParseManyComma parseConstraint)) <|> return [])
+                      <*> (reserved "as" *> tryParseManySpace (parseDefinition <* reserved "end") <* reserved "end")
 
 parseGlobalFunction :: Parser (GlobalDef (Type Kind))
 parseGlobalFunction =
@@ -112,8 +124,28 @@ parseExprNoApply =
                                  ]
 
 parseExpr :: Parser (Expr (Type Kind))
-parseExpr = parseLocalDefinition <|> try(parseApply) <|> parseExprNoApply
+parseExpr = parsePatternMatch
+        <|> parseLocalDefinition
+        <|> try(parseApply)
+        <|> parseExprNoApply
 
+
+parsePatternMatch :: Parser (Expr (Type Kind))
+parsePatternMatch =
+    PatternMatch <$> (reserved "match" *> parseExpr <* reserved "with")
+                 <*> ((many parsePatternBranch) <* reserved "end")
+
+
+parsePatternBranch :: Parser (PatternBranch (Type Kind))
+parsePatternBranch =
+    Branch <$> (reserved "|" *> parsePattern)
+           <*> (reserved "->" *> parseExpr)
+
+
+parsePattern :: Parser Pattern
+parsePattern = try (LiteralPattern <$> parseValue)
+           <|> TypePattern <$> parseCompoundType
+           <|> IdentifierPattern <$> identifier
 
 parseGenApply :: (t -> t -> t) -> Parser t -> Parser t
 parseGenApply f parser =
@@ -127,11 +159,14 @@ parseApply :: Parser (Expr (Type Kind))
 parseApply = parseGenApply Apply parseExprNoApply
 
 parseLiteral :: Parser (Expr (Type Kind))
-parseLiteral = Literal <$> choice [ parseInteger
-                                  ] <*> return UnknownT
+parseLiteral = Literal <$> parseValue <*> return UnknownT
+
+parseValue :: Parser Value
+parseValue = choice [ parseInteger
+                    ]
 
 parseIdentifier :: Parser (Expr (Type Kind))
-parseIdentifier = Identifier <$> identifier <*> return UnknownT
+parseIdentifier = Identifier <$> (identifier <|> parseTypeCtor) <*> return UnknownT
 
 parseLambda :: Parser (Expr (Type Kind))
 parseLambda = Lambda <$> (reserved "λ" *> identifier)
@@ -150,4 +185,4 @@ printAst arg = case arg of
     Right ast -> trace (show ast) arg
 
 parsePone :: String -> String -> Either String (PoneProgram (Type Kind))
-parsePone filename src = convertError $ parse parseMain {-filename {-removed until i get pretty printing working-}-} "" src
+parsePone filename src = convertError $ printAst  $ parse parseMain {-filename {-removed until i get pretty printing working-}-} "" src
