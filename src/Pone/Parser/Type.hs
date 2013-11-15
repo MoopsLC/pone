@@ -5,15 +5,8 @@ import Data.List
 import Control.Applicative hiding ((<|>), optional, many)
 import Text.Parsec
 import Text.Parsec.String
-import Text.Parsec.Language (emptyDef)
-import qualified Text.Parsec.Token as P
-
-lexer  = P.makeTokenParser $ emptyDef {P.reservedNames = ["as", "->"]}
-parens = P.parens lexer
-identifier = P.identifier lexer
-lexeme = P.lexeme lexer
-whiteSpace = P.whiteSpace lexer
-reserved = P.reserved lexer
+import Pone.Ast
+import Pone.Parser.Common
 
 data TypeRep = ApplyTR [TypeRep]
              | ArrowTR [TypeRep]
@@ -37,20 +30,20 @@ reduce (ArrowTR xs) = if (length xs == 1)
     else ArrowTR xs
 
 
-parseType :: Parser TypeRep
-parseType = ArrowTR <$> parseArrow
+parseTypeRep :: Parser TypeRep
+parseTypeRep = ArrowTR <$> parseArrow
 
 parseArrow :: Parser [TypeRep]
 parseArrow = sepBy1 (parseApply) (reserved "->")
 
 parseApply :: Parser TypeRep
-parseApply = ApplyTR <$> many1 (parseTypeName <|> parens parseType)
+parseApply = ApplyTR <$> many1 (NameTR <$> parseTypeName <|> parens parseTypeRep)
 
 parseTypeCtor :: Parser String
 parseTypeCtor = lexeme $ ((:) <$> upper <*> many alphaNum)
 
-parseTypeName :: Parser TypeRep
-parseTypeName = NameTR <$> (identifier <|> parseTypeCtor)
+parseTypeName :: Parser String
+parseTypeName = (identifier <|> parseTypeCtor)
 
 extractError :: Show a => Either String a -> String
 extractError (Left err) = err
@@ -61,4 +54,15 @@ convertError (Left err) = Left $ show err
 convertError (Right prog) = Right prog
 
 testType :: String -> String
-testType src = extractError $ convertError $ parse parseType "" src
+testType src = extractError $ convertError $ parse parseTypeRep "" src
+
+toType :: TypeRep -> (Type Kind)
+toType (ApplyTR ts) = foldl1 ProdT (map toType ts)
+toType (ArrowTR ts) = foldl1 (\x acc -> ProdT (ProdT Arrow acc) x) (map toType ts)
+toType (NameTR n) = TypeValue n UnknownK
+
+--data TypeRep = ApplyTR [TypeRep]
+--             | ArrowTR [TypeRep]
+--             | NameTR String
+parseType :: Parser (Type Kind)
+parseType = toType <$> parseTypeRep

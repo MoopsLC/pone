@@ -62,6 +62,7 @@ data Expr t = Identifier IdentifierName t
             | Literal Value t
             | Lambda IdentifierName (Expr t)
             | Apply (Expr t) (Expr t)
+            | LocalDefine (Definition t) (Expr t)
             | Source Location (Expr t)
 
 instance Show (Expr t) where
@@ -69,6 +70,7 @@ instance Show (Expr t) where
   show (Apply e0 e1) = (show e0) ++ " " ++ (show e1)
   show (Source loc expr) = show expr
   show (Literal v t') = show v
+  show (LocalDefine def expr) = "todo"
   show (Identifier id' t') = id'
 
 data ApplyList t = ApplyList [t]
@@ -93,7 +95,7 @@ data Kind = ProdK Kind Kind
           | UnknownK
     deriving (Show)
 
-data ArrowList k = ArrowList [Type k]
+--data ArrowList k = ArrowList [Type k]
 
-listToArrow :: ArrowList k -> Type k
-listToArrow (ArrowList tts) = foldl1 (\x acc -> ProdT (ProdT Arrow acc) x) tts
+--listToArrow :: ArrowList k -> Type k
+--listToArrow (ArrowList tts) = foldl1 (\x acc -> ProdT (ProdT Arrow acc) x) tts

@@ -1,0 +1,7 @@
+define get10 : Integer as
+    &: this is a comment so it shouldnt complain :&
+    10
+end
+0
+;0
+;type with constraints

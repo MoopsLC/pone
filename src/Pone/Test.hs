@@ -8,7 +8,7 @@ import System.FilePath
 import Debug.Trace
 
 import Pone.Utils
-import Pone.Parser
+import Pone.Parser.Expr
 import Pone.Ast
 
 data PoneTest t = Test String --filename

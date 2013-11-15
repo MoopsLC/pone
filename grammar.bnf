@@ -1,4 +1,4 @@
-; Pone grammar v 0.1
+; Pone grammar v 0.2
 
 <program> ::= (<global-definition>)* <expr>
 

@@ -1,5 +1,5 @@
-type * a b is
-    | * a b
+type Product a b is
+    | Product a b
 end
 0
 ;0

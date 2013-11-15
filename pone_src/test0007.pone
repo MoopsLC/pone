@@ -1,7 +1,8 @@
-define add ass bss : * a a as
-    define a1 as (add (fst ass) (snd ass)) in
-    define b1 as (add (fst bss) (fst bss)) in
-    * a1 b1
+define add ass bss : Product a a
+where (a < Monoid) as
+    define a1 : a as (add (fst ass) (snd ass)) in
+    define b1 : a as (add (fst bss) (fst bss)) in
+    Product a1 b1
 end
 0
 ;0
